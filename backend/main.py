@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from config import settings
 from routers import trips
 
 logging.basicConfig(
@@ -16,9 +17,13 @@ app = FastAPI(
     version="0.1.0",
 )
 
+_origins = ["http://localhost:5173", "http://localhost:3000"]
+if settings.frontend_url:
+    _origins.append(settings.frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

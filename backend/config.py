@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     duffel_api_key: str = ""
     ticketmaster_api_key: str = ""
+    frontend_url: str = ""
 
 
 settings = Settings()
