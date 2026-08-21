@@ -28,7 +28,6 @@ function BookLink({ href, label }: { href: string | null; label: string }) {
 
 export function TripCard({ trip }: Props) {
   const rankIdx = trip.rank - 1;
-  const budgetPct = Math.round((trip.total_cost / (trip.total_cost / 0.8)) * 100);
 
   const breakdown = [
     { label: 'Flight', value: trip.breakdown.flight, link: trip.affiliate_links.flight, linkLabel: 'Book flight' },
