@@ -91,6 +91,12 @@ export function TripCard({ trip }: Props) {
           <BookLink key={linkLabel} href={link} label={linkLabel} />
         ))}
       </div>
+
+      <div className="px-5 py-2 bg-amber-50 border-t border-amber-100">
+        <p className="text-xs text-amber-700">
+          ⚠ Flight prices are estimates and may differ from actual fares. Always confirm on the booking site before purchasing.
+        </p>
+      </div>
     </div>
   );
 }
