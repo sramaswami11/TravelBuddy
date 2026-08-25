@@ -1,9 +1,22 @@
 import { useState } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import { searchTrips, TripQuery, TripSuggestion } from './api';
 import { SearchForm } from './components/SearchForm';
 import { TripCard } from './components/TripCard';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsOfUse } from './pages/TermsOfUse';
 
 export default function App() {
+  return (
+    <Routes>
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfUse />} />
+      <Route path="*" element={<HomePage />} />
+    </Routes>
+  );
+}
+
+function HomePage() {
   const [results, setResults] = useState<TripSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,20 +38,31 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-indigo-700 py-12 px-4">
-        <div className="max-w-3xl mx-auto text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-white tracking-tight">TravelBuddy</h1>
-          <p className="mt-2 text-indigo-200 text-lg">
-            Enter your budget and we'll find the best complete trip for you.
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-600 py-14 px-4">
+        <div className="max-w-3xl mx-auto text-center mb-10">
+          <h1 className="text-5xl font-black text-white tracking-tight">
+            packed<span className="text-yellow-400">N</span>booked
+          </h1>
+          <p className="mt-3 text-indigo-200 text-lg">
+            Tell us your budget. We'll find your perfect trip.
           </p>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-5 text-indigo-300 text-sm font-medium">
+            <span>✈ Flights</span>
+            <span>🏨 Hotels</span>
+            <span>🚗 Car Rental</span>
+            <span>🎭 Activities</span>
+          </div>
         </div>
-        <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+
+        <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-6">
           <SearchForm onSearch={handleSearch} loading={loading} />
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-10">
+      {/* Results */}
+      <div className="max-w-5xl mx-auto w-full px-4 py-10 flex-1">
         {loading && (
           <div className="flex flex-col items-center py-16 text-gray-400">
             <div className="w-10 h-10 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -71,6 +95,21 @@ export default function App() {
           </p>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-100 py-6 px-4 mt-auto">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-400">
+          <span className="font-bold text-gray-600">
+            packed<span className="text-yellow-500">N</span>booked
+          </span>
+          <div className="flex gap-5">
+            <Link to="/privacy" className="hover:text-indigo-600 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-indigo-600 transition-colors">Terms of Use</Link>
+            <a href="mailto:hello@packednbooked.com" className="hover:text-indigo-600 transition-colors">Contact</a>
+          </div>
+          <span>© {new Date().getFullYear()} packedNbooked</span>
+        </div>
+      </footer>
     </div>
   );
 }

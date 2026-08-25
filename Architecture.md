@@ -1,14 +1,17 @@
-# TravelBuddy — Architecture (Living Document)
+# packedNbooked — Architecture (Living Document)
 
-> **Status:** Work in Progress  
-> **Last updated:** 2026-08-19  
-> **Stack:** Python 3.12 / FastAPI · React 18 / Vite · Deployed on Railway + Vercel
+> **Status:** Live in production  
+> **Last updated:** 2026-08-25  
+> **Stack:** Python 3.12 / FastAPI · React 18 / Vite · Deployed on Render  
+> **Live URL:** https://packednbooked.com
 
 ---
 
 ## 1. Problem Statement
 
-A user has a fixed budget (e.g. $2,000) and a trip duration (e.g. 4 days) and wants to know **where they should go** — with a complete, costed itinerary covering flights, hotel, rental car, and attraction tickets — sourced from real-time pricing APIs and ranked by an AI model.
+A user has a fixed budget (e.g. $2,000) and a trip duration (e.g. 7 days) and wants to know **where they should go** — with a complete, costed itinerary covering flights, hotel, rental car, and attraction tickets — sourced from real-time pricing APIs and ranked by AI.
+
+Revenue model: affiliate commissions from Booking.com, Skyscanner, Viator, and Ticketmaster links embedded in every result.
 
 ---
 
@@ -17,17 +20,17 @@ A user has a fixed budget (e.g. $2,000) and a trip duration (e.g. 4 days) and wa
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                          USER (Browser)                              │
-│          React + Vite frontend  ·  hosted on Vercel                  │
+│          React + Vite frontend · packednbooked.com (Render)          │
 └────────────────────────────┬─────────────────────────────────────────┘
                              │  HTTPS / REST (JSON)
                              ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                      FastAPI Backend                                 │
-│                  hosted on Railway / Render                          │
+│                  travelbuddy-yfhy.onrender.com                       │
 │                                                                      │
 │   ┌──────────────┐    ┌────────────────┐    ┌─────────────────────┐ │
 │   │  Trip Router │───►│  Orchestrator  │───►│   AI Analyzer       │ │
-│   │  (REST API)  │    │  (async fan-out│    │ (Claude / GPT)      │ │
+│   │  (REST API)  │    │  (async fan-out│    │  (Groq + GPT-OSS)   │ │
 │   └──────────────┘    │   per factory) │    └─────────────────────┘ │
 │                       └───────┬────────┘                            │
 └───────────────────────────────┼──────────────────────────────────────┘
@@ -39,13 +42,13 @@ A user has a fixed budget (e.g. $2,000) and a trip duration (e.g. 4 days) and wa
   │ Factory      │    │ Factory          │    │ Factory           │
   └──────┬───────┘    └────────┬─────────┘    └────────┬──────────┘
          │                     │                       │
-   ┌─────┴──────┐       ┌──────┴──────┐        ┌──────┴──────┐
-   │ Amadeus    │       │ Booking.com │        │ Viator      │
-   │ Agent      │       │ Agent       │        │ Agent       │
-   ├────────────┤       ├─────────────┤        ├─────────────┤
-   │ Skyscanner │       │ Expedia     │        │ Ticketmaster│
-   │ Agent      │       │ Agent       │        │ Agent       │
-   └────────────┘       └─────────────┘        └─────────────┘
+   ┌─────┴──────┐       ┌──────┴──────┐        ┌──────┴──────────┐
+   │ Duffel     │       │ Booking.com │        │ Viator          │
+   │ Agent ✅   │       │ Agent (mock)│        │ Agent (mock)    │
+   └────────────┘       └─────────────┘        ├─────────────────┤
+                                               │ Ticketmaster    │
+                                               │ Agent (stub)    │
+                                               └─────────────────┘
                                                       +
                                               ┌───────────────┐
                                               │ Car Rental    │
@@ -54,11 +57,11 @@ A user has a fixed budget (e.g. $2,000) and a trip duration (e.g. 4 days) and wa
                                                       │
                                               ┌───────┴───────┐
                                               │ Enterprise    │
-                                              │ Agent         │
-                                              ├───────────────┤
-                                              │ Turo Agent    │
+                                              │ Agent (mock)  │
                                               └───────────────┘
 ```
+
+Legend: ✅ = live API  |  (mock) = realistic hardcoded data  |  (stub) = always returns []
 
 ---
 
@@ -71,23 +74,21 @@ TravelProviderFactory (abstract)
     └── search(query: SearchQuery) → list[ProviderResult]
 
 FlightProviderFactory(TravelProviderFactory)
-    ├── AmadeusAgent      → calls api.amadeus.com
-    └── SkyscannerAgent   → calls partners.api.skyscanner.net
+    └── DuffelAgent       → calls api.duffel.com  (LIVE)
 
 HotelProviderFactory(TravelProviderFactory)
-    ├── BookingAgent      → calls booking.com Affiliate API
-    └── ExpediaAgent      → calls rapidapi.com/expedia
+    └── BookingAgent      → mock data  (pending partner approval)
 
 CarRentalProviderFactory(TravelProviderFactory)
-    └── EnterpriseAgent   → calls enterprise partner API
+    └── EnterpriseAgent   → mock data  (pending API access)
 
 AttractionProviderFactory(TravelProviderFactory)
-    ├── ViatorAgent       → calls viator.com partner API
-    └── TicketmasterAgent → calls discovery.api.ticketmaster.com
+    ├── ViatorAgent       → mock data  (pending partner approval)
+    └── TicketmasterAgent → stub  (TICKETMASTER_API_KEY not yet set)
 ```
 
 **Why Abstract Factory here:**  
-Every provider exposes completely different auth schemes, request shapes, and response formats — but the orchestrator only needs to call `search(query)` on each. Swapping or adding providers (e.g. adding Priceline for hotels) means adding one new Agent class without touching the orchestrator.
+Every provider exposes completely different auth schemes, request shapes, and response formats — but the orchestrator only needs to call `search(query)` on each. Adding a new provider means adding one Agent class without touching the orchestrator.
 
 ---
 
@@ -95,42 +96,44 @@ Every provider exposes completely different auth schemes, request shapes, and re
 
 ```
 User submits:
-  { origin: "JFK", budget: 2000, days: 4, travelers: 2, dates: "flexible" }
+  { origin: "JFK", budget: 2000, days: 7, travelers: 1 }
           │
           ▼
-Orchestrator fans out CONCURRENTLY (asyncio.gather):
-  ├── FlightFactory.search(query)    → [AmadeusResult, SkyscannerResult]
-  ├── HotelFactory.search(query)     → [BookingResult, ExpediaResult]
-  ├── CarRentalFactory.search(query) → [EnterpriseResult]
-  └── AttractionFactory.search(query)→ [ViatorResult, TicketmasterResult]
+Orchestrator — Phase 1 (inspiration search):
+  DuffelAgent fans out concurrently to all 15 pool destinations.
+  Returns cheapest round-trip offer per destination.
+  Filter + keep the 5 cheapest within budget.
           │
           ▼
-ResultAggregator:
-  - Normalizes all results to a common schema
-  - Prunes combinations that exceed budget
-  - Builds top N trip combos (flight + hotel + car + 2 attractions)
+Orchestrator — Phase 2 (deep evaluation, concurrent across 5 destinations):
+  ├── HotelFactory.search()      → BookingAgent
+  ├── CarRentalFactory.search()  → EnterpriseAgent
+  └── AttractionFactory.search() → ViatorAgent + TicketmasterAgent
           │
           ▼
-AIAnalyzer (Claude API):
-  - Ranks combos by value-for-money, experience quality, travel convenience
-  - Adds narrative explanation ("This combo gives you 2 nights beachfront...")
-  - Returns top 3 ranked packages
+Budget allocation + combo assembly:
+  40% flights · 35% hotel · 12% car · 13% activities
+  Drop combos exceeding total budget.
+          │
+          ▼
+AI Analyzer (Groq · openai/gpt-oss-120b):
+  Ranks combos by value-for-money, activity quality, destination appeal.
+  Returns rank + ai_summary + highlights + ranking_reason per combo.
+  Falls back to cost-sort if Groq fails.
           │
           ▼
 Response to frontend:
-  {
-    suggestions: [
-      {
-        rank: 1,
-        destination: "Cancun, MX",
-        total_cost: 1847,
-        breakdown: { flight: 480, hotel: 720, car: 210, attractions: 437 },
-        ai_summary: "...",
-        affiliate_links: { flight: "...", hotel: "...", ... }
-      },
-      ...
-    ]
-  }
+  [
+    {
+      rank: 1,
+      destination: "Cancún, MX",
+      total_cost: 1847,
+      breakdown: { flight: 480, hotel: 720, car_rental: 210, attractions: 437 },
+      ai_summary: "...",
+      affiliate_links: { flight: "skyscanner.net/...", hotel: "booking.com/...", ... }
+    },
+    ...
+  ]
 ```
 
 ---
@@ -139,135 +142,152 @@ Response to frontend:
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Frontend | React 18 + Vite | Rich UI ecosystem, fast builds, great travel component libraries |
-| Styling | Tailwind CSS + shadcn/ui | Polished components out of the box (cards, sliders, modals) |
-| Async state | TanStack Query | Handles loading states per-provider cleanly; shows partial results as they arrive |
+| Frontend | React 18 + Vite + TypeScript | Fast builds, full type safety, great DX |
+| Styling | Tailwind CSS | Utility-first, no runtime CSS overhead |
+| State | useState + fetch | Simple enough; no state library needed at this scale |
 | Backend | Python 3.12 + FastAPI | Async-native, perfect for concurrent API fan-out |
 | Concurrency | asyncio + httpx | Non-blocking HTTP for all provider calls in parallel |
-| AI Analysis | Anthropic Claude API | Ranks trip combos, generates natural-language summaries |
-| Frontend deploy | Vercel | Zero-config, free tier, deploys on every git push |
-| Backend deploy | Railway | Simple Python deploys, ~$5-7/mo to start |
+| AI Analysis | Groq · openai/gpt-oss-120b | Fast inference, low cost; uses openai SDK pointed at Groq endpoint |
+| Frontend deploy | Render (Static Site) | packednbooked.com — custom domain with auto-SSL |
+| Backend deploy | Render (Web Service) | travelbuddy-yfhy.onrender.com |
+
+**Why Groq instead of Anthropic/OpenAI:**  
+Free-tier inference during development; openai/gpt-oss-120b handles the structured JSON ranking task reliably. Groq's speed (~3–5× faster than OpenAI) keeps total search latency acceptable.
 
 ---
 
 ## 6. External API Providers
 
-| Category | Provider | API | Free Tier | Revenue Model |
-|---|---|---|---|---|
-| Flights | Amadeus | api.amadeus.com | 2,000 calls/mo | Pay-per-call after |
-| Flights | Skyscanner | Partner program | Apply required | Revenue share |
-| Hotels | Booking.com | Affiliate API | Free | Commission per booking |
-| Hotels | Expedia | Rapid API | Partner program | Commission per booking |
-| Car Rental | Enterprise | Partner API | TBD | Commission per booking |
-| Attractions | Viator | Partner API | Free | 8% affiliate commission |
-| Attractions | Ticketmaster | Discovery API | 5,000 calls/day | Free / affiliate |
-| Maps/Places | Google Maps | Places API | $200/mo credit | Pay-per-call after |
-| AI | Anthropic Claude | API | Pay-per-token | ~$0.003/query |
-| Currency | ExchangeRate-API | Free tier | 1,500 calls/mo | Free |
+| Category | Provider | Status | Revenue Model |
+|---|---|---|---|
+| Flights | Duffel | ✅ Sandbox live — production key pending | Deep links via Skyscanner affiliate |
+| Hotels | Booking.com | Mock — affiliate application pending | Commission per booking |
+| Car Rental | Enterprise | Mock — API access pending | Commission per booking |
+| Attractions | Viator | Mock — partner application pending | ~8% affiliate commission |
+| Attractions | Ticketmaster | Stub — API key not set | Affiliate links |
+| AI Ranking | Groq (openai/gpt-oss-120b) | ✅ Live | Per-token cost |
+
+**Affiliate link status:**
+- Flights: Skyscanner deep links wired. Add `&partner_id=YOUR_ID` once enrolled.
+- Hotels: `YOUR_AFFILIATE_ID` placeholder in `booking_agent.py:108`.
+- Skyscanner: `&partner_id=YOUR_SKYSCANNER_PARTNER_ID` placeholder in `duffel_agent.py:38`.
 
 ---
 
 ## 7. Revenue Integration
 
-Affiliate links are embedded directly in the response for each suggestion:
+Affiliate links are embedded in every `TripSuggestion` response:
 
 ```
-suggestion.affiliate_links.hotel  → Booking.com tracked deep-link
-suggestion.affiliate_links.flight → Expedia tracked deep-link
-suggestion.affiliate_links.activities → Viator tracked links
+suggestion.affiliate_links.flight       → Skyscanner deep link
+suggestion.affiliate_links.hotel        → Booking.com affiliate deep link
+suggestion.affiliate_links.car_rental   → Enterprise homepage (generic for now)
+suggestion.affiliate_links.attractions  → Viator search link
 ```
 
-When a user clicks and completes a booking, TravelBuddy earns a commission (3-8% depending on provider) with no cost to the user.
-
-**Future revenue tiers:**
-- Free: 3 destination suggestions, standard refresh rate
-- Premium ($9/mo): Unlimited suggestions, price alerts, saved trips, faster results
+When a user clicks and completes a booking, packedNbooked earns a commission (typically 4–10% depending on provider). No cost to the user.
 
 ---
 
-## 8. Project Directory Structure (Planned)
+## 8. Project Directory Structure
 
 ```
-TravelBuddy/
+packedNbooked/
+├── Architecture.md              # This file — high-level design
+├── Implementation.md            # Code walkthrough
+│
 ├── backend/
-│   ├── main.py                    # FastAPI app entry point
+│   ├── main.py                  # FastAPI app + CORS middleware
+│   ├── config.py                # Pydantic Settings — reads from .env
+│   ├── orchestrator.py          # Two-phase async pipeline
+│   ├── ai_analyzer.py           # Groq ranking + fallback cost-sort
+│   ├── requirements.txt         # Python dependencies
+│   │
 │   ├── routers/
-│   │   └── trips.py               # POST /api/trips/search
+│   │   └── trips.py             # POST /api/trips/search
+│   │
+│   ├── models/
+│   │   ├── query.py             # TripQuery + SearchQuery
+│   │   └── results.py           # ProviderResult, TripCombo, TripSuggestion
+│   │
 │   ├── factories/
-│   │   ├── base.py                # Abstract base classes
+│   │   ├── base.py              # TravelAgent + TravelProviderFactory ABCs
 │   │   ├── flight_factory.py
 │   │   ├── hotel_factory.py
 │   │   ├── car_rental_factory.py
 │   │   └── attraction_factory.py
+│   │
 │   ├── agents/
 │   │   ├── flights/
-│   │   │   ├── amadeus_agent.py
-│   │   │   └── skyscanner_agent.py
+│   │   │   ├── duffel_agent.py       # LIVE — Duffel sandbox API
+│   │   │   └── skyscanner_agent.py   # STUB
 │   │   ├── hotels/
-│   │   │   ├── booking_agent.py
-│   │   │   └── expedia_agent.py
+│   │   │   └── booking_agent.py      # MOCK
 │   │   ├── car_rental/
-│   │   │   └── enterprise_agent.py
+│   │   │   └── enterprise_agent.py   # MOCK
 │   │   └── attractions/
-│   │       ├── viator_agent.py
-│   │       └── ticketmaster_agent.py
-│   ├── models/
-│   │   ├── query.py               # TripQuery schema
-│   │   └── results.py             # ProviderResult, TripSuggestion schemas
-│   ├── orchestrator.py            # Async fan-out + aggregation
-│   ├── ai_analyzer.py             # Claude API integration
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── SearchForm.tsx
-│   │   │   ├── TripCard.tsx
-│   │   │   ├── BudgetBreakdown.tsx
-│   │   │   └── LoadingState.tsx
-│   │   ├── pages/
-│   │   │   ├── Home.tsx
-│   │   │   └── Results.tsx
-│   │   ├── hooks/
-│   │   │   └── useTripSearch.ts   # TanStack Query hook
-│   │   └── api/
-│   │       └── trips.ts           # API client
-│   ├── package.json
-│   └── vite.config.ts
-└── Architecture.md                # This file
+│   │       ├── viator_agent.py       # MOCK
+│   │       └── ticketmaster_agent.py # STUB
+│   │
+│   ├── data/
+│   │   └── destinations.json         # 15 curated destinations
+│   │
+│   └── tests/                        # 88 tests, all passing
+│       ├── conftest.py
+│       ├── test_models.py
+│       ├── test_agents.py
+│       ├── test_orchestrator.py
+│       ├── test_ai_analyzer.py
+│       └── test_router.py
+│
+└── frontend/
+    ├── index.html
+    ├── vite.config.ts
+    ├── tailwind.config.js
+    └── src/
+        ├── App.tsx              # Root — hero, results grid, footer
+        ├── api.ts               # fetch wrapper + TypeScript types
+        ├── data/
+        │   └── airports.ts      # ~250 worldwide airports for autocomplete
+        └── components/
+            ├── AirportInput.tsx # City/airport autocomplete combobox
+            ├── SearchForm.tsx   # Search inputs + validation
+            └── TripCard.tsx     # Result card with breakdown + booking links
 ```
 
 ---
 
-## 9. Open Questions / WIP
+## 9. Destination Pool
 
-- [ ] **Destination pool:** Do we start with a fixed list of ~20 popular destinations or do we allow open-ended search? Fixed list is easier to build v1 against.
-- [ ] **Date handling:** "Flexible" dates vs specific date range — flexible means more API calls; scope TBD.
-- [ ] **Car rental scope:** Is a car rental always included, or optional? (Some city trips don't need one.)
-- [ ] **Caching strategy:** Flight prices change fast; hotel prices are more stable. Do we cache hotel results for 30 min to reduce API calls?
-- [ ] **Skyscanner access:** Requires partner application approval — may need to fall back to Amadeus-only for flights at launch.
-- [ ] **Error handling / partial results:** If one provider is down, do we show partial results or wait? Leaning toward partial (show what we have, flag what failed).
-- [ ] **Auth / user accounts:** MVP is anonymous (no login). Saved trips and alerts require accounts — Phase 2.
-- [ ] **Mobile:** React app will be responsive, but a dedicated React Native app is a later consideration.
+Rather than searching the entire world, `destinations.json` contains 15 curated destinations: a mix of domestic US and international cities. The Duffel inspiration search fans out concurrently to all 15, picks the 5 cheapest round trips within budget, then evaluates those 5 in depth (hotel + car + activities).
+
+The pool is intentionally small to keep API costs and latency manageable. Adding a destination requires only a new entry in `destinations.json` plus mock data entries in the hotel/car/attraction agents.
 
 ---
 
 ## 10. Build Phases
 
-### Phase 1 — MVP (prove the concept)
-- FastAPI backend with Amadeus (flights) + Booking.com (hotels) only
-- Fixed destination pool: top 10 US + 5 international cities
-- AI ranking via Claude API
-- Basic React UI: search form + results cards
-- Affiliate links embedded
+### Phase 1 — MVP ✅ Complete
+- FastAPI backend with Duffel (flights, live) + mock hotel/car/attractions
+- 15-destination pool (10 US + 5 international)
+- AI ranking via Groq (openai/gpt-oss-120b)
+- React frontend: search form with airport autocomplete + result cards
+- Affiliate links embedded (Skyscanner wired; Booking.com placeholder)
+- Deployed end-to-end on Render at packednbooked.com
 
-### Phase 2 — Expand coverage
-- Add car rental + attraction providers
-- Flexible date search
-- Price caching layer (Redis)
-- User accounts + saved trips
+### Phase 2 — Real Data & Affiliate Revenue (In Progress)
+- [ ] Duffel production key (apply at duffel.com)
+- [ ] Booking.com affiliate approval → real hotel API
+- [ ] Skyscanner affiliate partner ID
+- [ ] Viator partner approval → real attraction data
+- [ ] Ticketmaster API key → real event data
+- [ ] Privacy Policy + Terms of Use pages
+- [ ] Favicon + brand polish
 
-### Phase 3 — Scale & monetize
-- Premium subscription tier
-- Price alerts (background polling jobs)
-- Mobile app (React Native)
-- White-label API for travel agencies
+### Phase 3 — Growth
+- [ ] Real car rental API
+- [ ] Redis caching (hotel/attraction prices stable for 30 min)
+- [ ] Expand destination pool beyond 15
+- [ ] User accounts + saved trips
+- [ ] Price alerts (background jobs)
+- [ ] Multi-currency display

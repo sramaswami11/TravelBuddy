@@ -1,14 +1,14 @@
-# TravelBuddy — Implementation Guide (Living Document)
+# packedNbooked — Implementation Guide (Living Document)
 
-> **Status:** In Progress — backend complete, frontend pending  
-> **Last updated:** 2026-08-19  
-> **Companion docs:** `Architecture.md` (high-level design), this file (code walkthrough)
+> **Status:** Live in production  
+> **Last updated:** 2026-08-25  
+> **Companion doc:** `Architecture.md` (high-level design)
 
 ---
 
 ## What This Doc Is
 
-A bottom-up walkthrough of every layer of the backend, written so a developer can clone the repo, read this document, and understand not just *what* the code does but *why* it's structured the way it is. Updated alongside the code as new layers are built.
+A bottom-up walkthrough of every layer of the system — written so a developer can clone the repo, read this document, and understand not just *what* the code does but *why* it's structured the way it is.
 
 ---
 
@@ -23,15 +23,16 @@ A bottom-up walkthrough of every layer of the backend, written so a developer ca
 7. [The AI Analyzer](#7-the-ai-analyzer)
 8. [FastAPI Layer](#8-fastapi-layer)
 9. [Configuration](#9-configuration)
-10. [Test Suite](#10-test-suite)
-11. [Running Locally](#11-running-locally)
-12. [Extending the System](#12-extending-the-system)
+10. [Frontend](#10-frontend)
+11. [Test Suite](#11-test-suite)
+12. [Running Locally](#12-running-locally)
+13. [Extending the System](#13-extending-the-system)
 
 ---
 
 ## 1. How a Request Flows Through the System
 
-A user submits: "I have $2,000, 4 days, 2 people, leaving from Atlanta." Here is exactly what happens:
+A user submits: "I have $2,000, 7 days, 1 person, leaving from JFK." Here is exactly what happens:
 
 ```
 POST /api/trips/search
@@ -42,117 +43,117 @@ routers/trips.py          — validates the request body into a TripQuery object
     ▼
 orchestrator.find_trips() — TWO-PHASE async fan-out (see §6 for detail)
     │
-    │  Phase 1: Ask Amadeus "what are the cheapest destinations from ATL?"
-    │           Filter results to our 15-destination pool.
-    │           Keep the 5 cheapest.
+    │  Phase 1: DuffelAgent fans out concurrently to all 15 pool destinations.
+    │           Returns the cheapest round-trip offer per destination.
+    │           Filter to pool + keep the 5 cheapest within budget.
     │
     │  Phase 2: For each of those 5 destinations, concurrently fan out to:
     │           ├── HotelProviderFactory  → BookingAgent (mock)
     │           ├── CarRentalFactory      → EnterpriseAgent (mock)
-    │           └── AttractionFactory     → ViatorAgent (mock) + TicketmasterAgent (stub)
+    │           └── AttractionFactory    → ViatorAgent (mock) + TicketmasterAgent (stub)
     │
+    │  Allocate remaining budget across hotel/car/activities.
     │  Assemble one TripCombo per destination.
     │  Drop any combo whose total_cost exceeds the budget.
     │  Return list[TripCombo] sorted by total cost.
     │
     ▼
-ai_analyzer.rank_trips()  — sends all combos to Claude in ONE call
-    │                        Claude must call the submit_rankings tool,
-    │                        returning rank + ai_summary + highlights + ranking_reason
-    │                        for each of the top 3.
+ai_analyzer.rank_trips()  — sends all combos to Groq (openai/gpt-oss-120b) in one call.
+    │                        Prompt asks for a JSON array: rank + ai_summary +
+    │                        highlights + ranking_reason per destination.
+    │                        Falls back to cost-sort if Groq fails.
     │
     ▼
 list[TripSuggestion]       — returned as JSON to the browser
 ```
 
-Total wall-clock time is dominated by the Amadeus API call in Phase 1 (~1-2s) plus the Claude call (~2-4s). The hotel/car/attraction fan-out in Phase 2 runs concurrently so its latency is the slowest single provider, not the sum of all.
+Total wall-clock time: Duffel fan-out (~2–4s across 15 destinations) + Groq call (~1–2s). The hotel/car/attraction fan-out in Phase 2 is all mock so it adds negligible time.
 
 ---
 
 ## 2. Project Structure
 
 ```
-TravelBuddy/
-├── Architecture.md          # High-level design decisions
-├── Implementation.md        # This file — code walkthrough
-├── pyproject.toml           # pytest configuration
-├── requirements.txt         # Python dependencies
-├── .env.example             # Copy to backend/.env and fill in keys
+packedNbooked/
+├── Architecture.md
+├── Implementation.md
 │
-└── backend/
-    ├── main.py              # FastAPI app + CORS middleware
-    ├── config.py            # Pydantic Settings — reads from .env
-    ├── orchestrator.py      # The two-phase async pipeline
-    ├── ai_analyzer.py       # Claude API integration
-    │
-    ├── routers/
-    │   └── trips.py         # POST /api/trips/search
-    │
-    ├── models/
-    │   ├── query.py         # TripQuery (user input) + SearchQuery (internal)
-    │   └── results.py       # ProviderResult, TripCombo, TripSuggestion
-    │
-    ├── factories/
-    │   ├── base.py          # TravelAgent + TravelProviderFactory ABCs
-    │   ├── flight_factory.py
-    │   ├── hotel_factory.py
-    │   ├── car_rental_factory.py
-    │   └── attraction_factory.py
-    │
-    ├── agents/
-    │   ├── flights/
-    │   │   ├── amadeus_agent.py      # REAL — calls Amadeus REST API
-    │   │   └── skyscanner_agent.py   # STUB — returns [] until partner approved
-    │   ├── hotels/
-    │   │   ├── booking_agent.py      # MOCK — realistic data, no real API
-    │   │   └── expedia_agent.py      # STUB
-    │   ├── car_rental/
-    │   │   └── enterprise_agent.py   # MOCK
-    │   └── attractions/
-    │       ├── viator_agent.py       # MOCK
-    │       └── ticketmaster_agent.py # STUB
-    │
-    ├── data/
-    │   └── destinations.json         # 15 curated destinations with metadata
-    │
-    └── tests/
-        ├── conftest.py               # Shared pytest fixtures
-        ├── test_models.py
-        ├── test_agents.py
-        ├── test_orchestrator.py
-        ├── test_ai_analyzer.py
-        └── test_router.py
+├── backend/
+│   ├── main.py              # FastAPI app entry point + CORS
+│   ├── config.py            # Pydantic Settings — reads .env
+│   ├── orchestrator.py      # Two-phase async pipeline
+│   ├── ai_analyzer.py       # Groq ranking + fallback
+│   ├── requirements.txt
+│   │
+│   ├── routers/
+│   │   └── trips.py         # POST /api/trips/search
+│   │
+│   ├── models/
+│   │   ├── query.py         # TripQuery + SearchQuery
+│   │   └── results.py       # ProviderResult, TripCombo, TripSuggestion
+│   │
+│   ├── factories/
+│   │   ├── base.py          # TravelAgent + TravelProviderFactory ABCs
+│   │   ├── flight_factory.py
+│   │   ├── hotel_factory.py
+│   │   ├── car_rental_factory.py
+│   │   └── attraction_factory.py
+│   │
+│   ├── agents/
+│   │   ├── flights/
+│   │   │   ├── duffel_agent.py       # LIVE — Duffel sandbox
+│   │   │   └── skyscanner_agent.py   # STUB — returns []
+│   │   ├── hotels/
+│   │   │   └── booking_agent.py      # MOCK
+│   │   ├── car_rental/
+│   │   │   └── enterprise_agent.py   # MOCK
+│   │   └── attractions/
+│   │       ├── viator_agent.py       # MOCK
+│   │       └── ticketmaster_agent.py # STUB — returns []
+│   │
+│   ├── data/
+│   │   └── destinations.json         # 15 pool destinations
+│   │
+│   └── tests/                        # 88 tests, all passing
+│
+└── frontend/
+    └── src/
+        ├── App.tsx
+        ├── api.ts
+        ├── data/airports.ts           # ~250 worldwide airports
+        └── components/
+            ├── AirportInput.tsx
+            ├── SearchForm.tsx
+            └── TripCard.tsx
 ```
 
-**Import style:** All imports inside `backend/` are flat — `from models.results import TripCombo`, never `from backend.models.results import TripCombo`. This is because uvicorn runs from the `backend/` directory, which is on `sys.path`. The same rule applies in tests via `pythonpath = ["backend"]` in `pyproject.toml`.
+**Import style:** All imports inside `backend/` are flat — `from models.results import TripCombo`. This works because uvicorn runs from the `backend/` directory. Tests use `pythonpath = ["backend"]` in `pyproject.toml` for the same reason.
 
 ---
 
 ## 3. Data Models
 
-All models live in `backend/models/`. They're Pydantic v2 classes, which means they validate on construction and serialize to/from JSON automatically.
+All models live in `backend/models/`. They're Pydantic v2 classes — validate on construction, serialize to/from JSON automatically.
 
 ### `query.py`
 
-Two models travel through the system:
-
-**`TripQuery`** — the raw user-facing input. This is what the frontend sends and what FastAPI validates against.
+**`TripQuery`** — the raw user-facing input validated by FastAPI:
 
 ```python
 class TripQuery(BaseModel):
-    origin_iata: str          # e.g. "ATL"
-    budget_usd: float         # must be > 0
-    duration_days: int        # 1–30
-    travelers: int            # 1–10, default 1
-    departure_date: Optional[date]  # None means flexible
+    origin_iata: str              # e.g. "JFK"
+    budget_usd: float             # must be > 0
+    duration_days: int            # 1–30
+    travelers: int                # 1–10, default 1
+    departure_date: Optional[date]  # None = default to 30 days from today
 ```
 
-**`SearchQuery`** — an internal object created by the orchestrator and passed down to every factory and agent. It adds `destination_iata` and `destination_name` so each agent knows where it's searching.
+**`SearchQuery`** — internal object created by the orchestrator and passed to every factory/agent. Adds destination info:
 
 ```python
 class SearchQuery(BaseModel):
     origin_iata: str
-    destination_iata: Optional[str]   # None = inspiration search (find anywhere cheap)
+    destination_iata: Optional[str]   # None = inspiration mode
     destination_name: Optional[str]
     budget_usd: float
     duration_days: int
@@ -160,27 +161,25 @@ class SearchQuery(BaseModel):
     departure_date: Optional[date]
 ```
 
-The key insight: `destination_iata = None` is the signal for an *inspiration search* — "I don't know where I'm going, find me something cheap." When it's set, the agent performs a targeted search for that specific route.
+`destination_iata = None` signals an *inspiration search* — "find me the cheapest destinations." When set, the agent searches a specific route.
 
 ### `results.py`
 
-Three models represent output at different stages of the pipeline:
-
-**`ProviderResult`** — the atomic unit of data returned by any agent. Every agent, regardless of category or provider, must produce this shape.
+**`ProviderResult`** — the atomic unit returned by any agent:
 
 ```python
 class ProviderResult(BaseModel):
-    provider: str                 # "amadeus", "booking", "viator", etc.
-    category: ProviderCategory    # FLIGHT, HOTEL, CAR_RENTAL, or ATTRACTION
+    provider: str                  # "duffel", "booking", "viator", etc.
+    category: ProviderCategory     # FLIGHT, HOTEL, CAR_RENTAL, or ATTRACTION
     destination_iata: str
     destination_name: str
-    title: str                    # Human-readable label ("Bellagio — 4 nights")
+    title: str                     # "United Airlines round-trip JFK → LAS"
     price_usd: float
-    details: dict                 # Provider-specific extras (carrier, stars, etc.)
-    affiliate_url: Optional[str]  # The money link — embedded in every result
+    details: dict                  # provider-specific extras
+    affiliate_url: Optional[str]   # the revenue link
 ```
 
-**`TripCombo`** — one assembled trip package: exactly one flight + one hotel + one optional car + up to 2 attractions. Built by the orchestrator, not agents.
+**`TripCombo`** — one assembled trip package (flight + hotel + optional car + up to 2 attractions):
 
 ```python
 class TripCombo(BaseModel):
@@ -194,37 +193,24 @@ class TripCombo(BaseModel):
 
     @property
     def breakdown(self) -> dict[str, float]:
-        # Returns {"flight": 400.0, "hotel": 600.0, "car_rental": 180.0, "attractions": 98.0}
+        # {"flight": 400.0, "hotel": 600.0, "car_rental": 180.0, "attractions": 98.0}
 ```
 
-**`TripSuggestion`** — the final response object. A `TripCombo` enriched by Claude: it adds `rank`, `ai_summary`, `highlights`, `ranking_reason`, and flattens the affiliate URLs into a single dict.
+**`TripSuggestion`** — a `TripCombo` enriched by AI with rank, summary, and flattened affiliate links. This is what the frontend receives.
 
-```python
-class TripSuggestion(BaseModel):
-    rank: int
-    destination: str
-    destination_iata: str
-    total_cost: float
-    breakdown: dict[str, float]
-    ai_summary: str               # "Las Vegas delivers spectacular value..."
-    highlights: list[str]         # ["Strip Night Tour ($98)", "Bellagio Hotel", ...]
-    ranking_reason: str           # "Best value-for-money of all candidates."
-    affiliate_links: dict[str, Optional[str]]
-```
-
-The progression `ProviderResult → TripCombo → TripSuggestion` maps neatly to the three stages of the pipeline: agents produce raw data, the orchestrator assembles packages, Claude enriches and ranks them.
+The pipeline maps cleanly: **agents → `ProviderResult`** | **orchestrator → `TripCombo`** | **AI analyzer → `TripSuggestion`**
 
 ---
 
 ## 4. The Abstract Factory Pattern
 
-`backend/factories/base.py` defines two abstract base classes that every factory and agent must implement.
+`backend/factories/base.py` defines two abstract base classes every factory and agent must implement.
 
 ### Why this pattern?
 
-Each travel provider has a completely different API: Amadeus uses OAuth2 client credentials + REST; Booking.com uses an affiliate token in a header; Viator has its own partner SDK. But the orchestrator doesn't care about any of that — it just needs to say "give me hotels in Las Vegas for 4 nights under $700" and get back a list of `ProviderResult` objects.
+Each travel provider has a completely different API. Duffel uses Bearer token auth + a custom `Duffel-Version` header. Booking.com uses an affiliate token. Viator has its own partner SDK. The orchestrator doesn't care — it just calls `search(query)` and gets back `list[ProviderResult]`.
 
-The Abstract Factory gives us exactly this: a uniform interface over wildly different underlying implementations. Adding a new hotel provider (say, Hotels.com) means writing one new `HotelsComAgent` class and registering it in `HotelProviderFactory.get_agents()`. Nothing else in the codebase changes.
+Adding a new hotel provider (say, Hotels.com) means writing one `HotelsComAgent` class and adding it to `HotelProviderFactory.get_agents()`. Nothing else changes.
 
 ### The two abstract classes
 
@@ -245,83 +231,50 @@ class TravelProviderFactory(ABC):
     async def search_all(self, query: SearchQuery) -> list[ProviderResult]:
         tasks = [agent.search(query) for agent in self.get_agents()]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        # ... collects results, logs failures, skips failed agents
+        # collects results, logs failures, skips failed agents
 ```
 
-`search_all()` is the key method: it launches all agents for its category concurrently via `asyncio.gather`. If one agent raises an exception (network timeout, rate limit, etc.), it logs a warning and moves on. The factory never crashes because one provider is having a bad day.
-
-### The four concrete factories
-
-Each factory is a single file that just lists which agents it manages:
-
-```python
-# factories/flight_factory.py
-class FlightProviderFactory(TravelProviderFactory):
-    def get_agents(self) -> list[TravelAgent]:
-        return [
-            AmadeusAgent(),
-            # SkyscannerAgent(),  # uncomment when partner access is approved
-        ]
-```
-
-This also shows the growth path: as new partner agreements are signed, you uncomment one line.
+`search_all()` uses `asyncio.gather` with `return_exceptions=True` — if one agent crashes (timeout, rate limit), the others are unaffected.
 
 ---
 
 ## 5. Provider Agents
 
-Agents live in `backend/agents/` organized by category. There are currently three tiers:
-
 | Tier | Agents | Behavior |
 |------|--------|----------|
-| Real | `AmadeusAgent` | Makes live HTTP calls to api.amadeus.com |
+| Live | `DuffelAgent` | Real API calls to api.duffel.com (sandbox key) |
 | Mock | `BookingAgent`, `EnterpriseAgent`, `ViatorAgent` | Hardcoded realistic data with random price variation |
-| Stub | `SkyscannerAgent`, `ExpediaAgent`, `TicketmasterAgent` | Always return `[]` — slots reserved for future implementation |
+| Stub | `SkyscannerAgent`, `TicketmasterAgent` | Always return `[]` — slots reserved for future |
 
-The mock/stub split is intentional: it lets the full pipeline run end-to-end while waiting for partner program approvals. When Booking.com approval comes through, `BookingAgent._mock_search()` gets replaced with `_real_search()` that calls the actual API. The orchestrator, factories, tests, and response shapes are all unaffected.
+### DuffelAgent (live)
 
-### AmadeusAgent (real)
-
-The only agent making live HTTP calls. It handles two modes:
+Two modes depending on `query.destination_iata`:
 
 **Inspiration mode** (`destination_iata = None`):  
-Calls `GET /v1/shopping/flight-destinations` with `origin=ATL` and `maxPrice=800` (40% of budget). Amadeus returns a list of destinations with their cheapest available fares. This is Phase 1 of the orchestrator.
+Fans out concurrently to all 15 pool destinations via `asyncio.gather`, making one `POST /air/offer_requests` per destination with `return_offers: true`. Returns the cheapest offer per route. This is Phase 1.
 
-**Offers mode** (`destination_iata` is set):  
-Calls `GET /v2/shopping/flight-offers` for a specific route. This is used if the orchestrator ever needs to price a specific flight after the inspiration search narrows things down.
+**Route mode** (`destination_iata` is set):  
+Searches a single route. Used if the orchestrator ever needs to price a specific flight independently of Phase 1.
 
-**Token caching:**  
-Amadeus uses OAuth2 client credentials. Getting a new token on every request would be wasteful and slow. `amadeus_agent.py` uses a module-level `_TokenCache` dataclass:
+**Affiliate links:**  
+Every `ProviderResult` from Duffel gets a Skyscanner deep link via `_skyscanner_url()`. The link encodes origin, destination, dates, and traveler count. Add `&partner_id=YOUR_ID` once enrolled in the Skyscanner affiliate program.
 
-```python
-@dataclass
-class _TokenCache:
-    access_token: str = ""
-    expires_at: float = 0.0
-
-_token_cache = _TokenCache()
-
-async def _get_access_token() -> str:
-    if time.time() < _token_cache.expires_at - 60:   # refresh 60s early
-        return _token_cache.access_token
-    # ... fetch new token, update cache
-```
-
-Because this is a module-level singleton, it's shared across all requests within a single process. Tokens are reused until 60 seconds before they expire, then refreshed.
+**Date defaulting:**  
+`_default_dates()` returns departure 30 days from today if `query.departure_date` is None. This is a UX choice — results are shown to users without them needing to specify dates.
 
 ### BookingAgent (mock)
 
-Uses a hardcoded dict `_HOTEL_TEMPLATES` with 4 real hotel options per destination (actual hotel names, star ratings, and realistic base rates). Each search applies ±15% random variation to simulate real price fluctuation:
+`_HOTEL_TEMPLATES` contains 4 real hotel options per destination (actual names, star ratings, realistic base rates). Each search applies ±15% random variation:
 
 ```python
 price = base_rate * query.duration_days * random.uniform(0.85, 1.15)
 ```
 
-Returns an empty list for destinations not in the template dict. This is the expected behavior — not every provider covers every market.
+Returns empty list for destinations not in the template — realistic behavior since not every provider covers every market.
 
 ### ViatorAgent (mock)
 
-Similar pattern to BookingAgent: `_ATTRACTIONS` dict keyed by IATA code, 4 attractions per destination with real names and per-person pricing. Prices are multiplied by `query.travelers` since attraction tickets are per-person:
+`_ATTRACTIONS` dict keyed by IATA: 4 attractions per destination, per-person pricing multiplied by `query.travelers`:
 
 ```python
 price = attraction["price_per_person"] * query.travelers * random.uniform(0.95, 1.05)
@@ -329,149 +282,100 @@ price = attraction["price_per_person"] * query.travelers * random.uniform(0.95, 
 
 ### EnterpriseAgent (mock)
 
-Slightly different from the others: it has a `_DEFAULT_RATES` fallback, so it returns results even for destinations not in its main dict. The rationale is that car rental is a commodity — Enterprise operates everywhere, so returning default rates is more realistic than returning empty.
+Has a `_DEFAULT_RATES` fallback so it returns results for any destination. Car rental is a commodity — Enterprise operates everywhere, so returning default rates is more realistic than returning empty.
 
 ---
 
 ## 6. The Orchestrator
 
-`backend/orchestrator.py` is the heart of the system. It implements a two-phase approach to avoid a combinatorial explosion of API calls.
+`backend/orchestrator.py` is the heart of the system. It solves a combinatorial problem: how to search N destinations across M provider categories without making N×M API calls.
 
-### The combinatorial problem
+### The two-phase approach
 
-Naively, you might search flights to all 15 destinations simultaneously, then for each one get hotels, cars, and attractions. That's:
-- 15 Amadeus calls for flight offers
-- 15 hotel calls
-- 15 car calls  
-- 15 attraction calls
-
-= 60 concurrent API calls per user request. That would be expensive, slow, and likely get us rate-limited.
-
-### The two-phase solution
-
-**Phase 1 — Inspiration search (1 API call):**  
-Ask Amadeus "what are the cheapest round trips from ATL within budget?" in one request. Amadeus returns up to 20 destinations sorted by price. Filter this to our 15-destination pool and take the 5 cheapest.
+**Phase 1 — Inspiration search (15 concurrent Duffel calls, appears as 1 logical step):**  
+`DuffelAgent.search(query_with_no_destination)` fans out to all 15 pool destinations concurrently. Returns cheapest offer per destination. Filter to those within 40% of budget (the flight allocation ratio) and take the top 5 cheapest.
 
 **Phase 2 — Deep evaluation (fan-out across 5 destinations):**  
-For each of the 5 cheapest destinations, concurrently fan out to hotel, car rental, and attraction factories. This is 5 × 3 = 15 calls, all running concurrently.
+For each of the 5 shortlisted destinations, concurrently build a full combo:
 
 ```python
 combo_tasks = [
-    _build_combo_for_destination(_DEST_BY_IATA[f.destination_iata], f, query)
-    for f in candidates  # top 5 cheapest flights
+    _build_combo_for_destination(dest, flight, query)
+    for dest, flight in candidates
 ]
 results = await asyncio.gather(*combo_tasks, return_exceptions=True)
 ```
 
-The `return_exceptions=True` on the outer gather is critical: if one destination's combo build fails entirely (e.g., no hotel results + an agent crash), it shows up as an exception in `results` and gets logged + skipped. The other 4 destinations are unaffected.
+Each `_build_combo_for_destination` itself fans out to hotel/car/attraction factories concurrently. Total: 5 × 3 category calls = 15, all concurrent.
 
 ### Budget allocation
 
-The orchestrator uses fixed ratios to divide the budget across categories:
+Fixed ratios divide the total budget:
 
 ```python
-_FLIGHT_BUDGET_RATIO    = 0.40   # 40% for flights
-_HOTEL_BUDGET_RATIO     = 0.35   # 35% for hotel
-_CAR_BUDGET_RATIO       = 0.12   # 12% for car rental
-_ATTRACTION_BUDGET_RATIO = 0.13  # 13% for attractions
+_FLIGHT_BUDGET_RATIO     = 0.40
+_HOTEL_BUDGET_RATIO      = 0.35
+_CAR_BUDGET_RATIO        = 0.12
+_ATTRACTION_BUDGET_RATIO = 0.13
 ```
 
-Once the flight price is known (from Amadeus), the remaining budget is redistributed proportionally among hotel/car/attractions:
+Once the actual flight price is known, the remaining budget is redistributed proportionally among hotel/car/activities:
 
 ```python
 remaining = query.budget_usd - flight.price_usd
 hotel_budget = remaining * (_HOTEL_BUDGET_RATIO / (1 - _FLIGHT_BUDGET_RATIO))
 ```
 
-This recalculates the ratios on the non-flight portion rather than the total, so cheap flights don't leave the hotel with an undersized budget.
+This recalculates ratios on the non-flight portion, so cheap flights don't leave hotel/activities with an undersized budget.
 
 ### Picking the best option
 
-`_pick_best()` selects one result from a list given a budget:
+`_pick_best()` selects the best result within budget:
 
 ```python
-def _pick_best(results: list[ProviderResult], budget: float) -> ProviderResult | None:
+def _pick_best(results, budget):
     within = [r for r in results if r.price_usd <= budget]
     if within:
         return max(within, key=lambda r: r.price_usd)   # most expensive within budget
-    return min(results, key=lambda r: r.price_usd)       # cheapest if all exceed budget
+    return min(results, key=lambda r: r.price_usd)       # cheapest if all over budget
 ```
 
-The "most expensive within budget" heuristic is intentional: given a $700 hotel budget, we'd rather show the $650 Bellagio option than the $200 Motel 6, because it gives Claude better material to rank and the user a more compelling suggestion. If every option is over budget, we return the cheapest one and let the total_cost filter in `find_trips` decide whether to include the combo.
-
-### Destination pool
-
-Rather than searching the entire world, `destinations.json` contains exactly 15 curated destinations: 10 domestic US cities and 5 international. The file includes metadata (avg hotel rates, popular attractions, timezone) that agents can use to generate realistic mock data.
-
-The `_DEST_BY_IATA` dict at module level loads this once at startup:
-```python
-_DEST_BY_IATA: dict[str, dict] = {d["iata"]: d for d in _DESTINATIONS}
-```
-
-Any Amadeus inspiration result whose IATA code is not in this dict gets silently filtered out.
+"Most expensive within budget" is intentional — given a $700 hotel budget, a $650 option is more compelling than a $200 one, giving the AI better material to rank.
 
 ---
 
 ## 7. The AI Analyzer
 
-`backend/ai_analyzer.py` is where Claude enters the picture. Its job: take a `list[TripCombo]` and return `list[TripSuggestion]` with AI-generated rankings and narrative summaries.
+`backend/ai_analyzer.py` takes a `list[TripCombo]` and returns `list[TripSuggestion]` with AI-generated rankings and summaries.
 
-### Why not rank by cost?
+### Why not just rank by cost?
 
-The orchestrator already sorts combos by total cost. But cheapest isn't always best. A $1,100 trip to Nashville with a honky-tonk crawl, distillery tour, and free parking might be a better *experience* than a $950 trip to the same destination with nothing to do. Claude can reason about activity quality, destination appeal for the budget, and the mix of inclusions in a way that a cost sort cannot.
+The orchestrator already sorts by cost. Cheapest isn't always best. A $1,100 trip to Nashville with a honky-tonk crawl and distillery tour might be a better *experience* than a $950 trip with nothing included. The AI reasons about activity quality, destination appeal, and the overall package.
 
-### Getting structured output from Claude
+### Approach: plain JSON prompt
 
-The challenge with LLMs is getting reliable, parseable output. We use **tool use** (also called function calling) to solve this: instead of asking Claude to write JSON in its text response (which it might format inconsistently), we define a tool called `submit_rankings` and tell Claude it *must* call it:
+Unlike the original design (which used Claude tool-calling), the Groq implementation uses a direct JSON prompt — simpler and faster:
 
 ```python
-_RANKING_TOOL = {
-    "name": "submit_rankings",
-    "description": "Submit the final ranked trip suggestions after analysis",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "rankings": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "rank": {"type": "integer"},
-                        "destination_iata": {"type": "string"},
-                        "ai_summary": {"type": "string"},
-                        "highlights": {"type": "array", "items": {"type": "string"}},
-                        "ranking_reason": {"type": "string"},
-                    },
-                    ...
-                }
-            }
-        }
-    }
-}
+prompt = (
+    f"Rank the top {n} by value-for-money and overall experience quality.\n\n"
+    f"Reply with ONLY a JSON array (no markdown, no explanation) of {n} objects, each with:\n"
+    f"  rank (int), destination_iata (string), ai_summary (2-3 sentences),\n"
+    f"  highlights (array of 3-5 strings), ranking_reason (one sentence)"
+)
 ```
 
-The `tool_choice={"type": "any"}` parameter forces Claude to call a tool rather than responding in free text. The response is then parsed by extracting the `tool_use` block from `response.content`.
+The response parser uses bracket-matching to locate and extract the JSON array from the raw response text — handles cases where the model wraps output in prose. If parsing fails, falls back to `_fallback_ranking`.
 
-### The prompt
+### Model
 
-The prompt is intentionally lean — it presents each combo in a compact text format and gives Claude clear ranking criteria:
+`openai/gpt-oss-120b` — accessed via the Groq inference endpoint using the `openai` Python SDK pointed at `https://api.groq.com/openai/v1`. The openai SDK is used (not a Groq-specific SDK) because Groq's API is OpenAI-compatible.
 
-```
-Rank these packages from best to worst based on:
-1. Value for money (how much experience per dollar spent)
-2. Quality and variety of included activities
-3. Overall destination appeal for the budget and duration
-```
-
-A single call handles all candidates (typically 3-5 combos), so there's one Claude API call per user request regardless of how many destinations were evaluated.
+Qwen 3.6 27B was tried and abandoned — it wraps output in unclosed `<think>` blocks that break the JSON parser.
 
 ### Graceful fallback
 
-If the Claude call fails for any reason (network error, API outage, tool not called), the system falls back to `_fallback_ranking()` which sorts by cost and generates a simple template-based summary. Users still get results — they're just not AI-enriched. This is logged as a warning but never surfaces as a 500 error.
-
-### Model choice
-
-Uses `claude-sonnet-4-6` — a deliberate balance. The ranking task is conversational-complexity reasoning (not the kind of deep chain-of-thought that would justify Opus), and at ~2,000 tokens of input + 500 tokens of output per call, Sonnet keeps the per-query cost around $0.01.
+If the Groq call fails (network error, API outage, malformed response), `_fallback_ranking()` sorts by cost and generates a template summary. Users still get results — never a 500 error.
 
 ---
 
@@ -479,187 +383,177 @@ Uses `claude-sonnet-4-6` — a deliberate balance. The ranking task is conversat
 
 ### `main.py`
 
-The entry point. Three things happen here:
-
-1. **Logging setup** — structured log format with timestamps and level names, applied once at app startup.
-2. **CORS middleware** — allows `localhost:5173` (Vite dev server) and `localhost:3000`. In production, this should be locked to the deployed frontend domain.
-3. **Router inclusion** — `app.include_router(trips.router, prefix="/api")` mounts all trip routes under `/api`.
+Three responsibilities:
+1. **Logging** — structured format with timestamps, applied once at startup.
+2. **CORS** — configured via `FRONTEND_URL` env var. Allows the Render frontend URL and `localhost:5173` for local dev.
+3. **Router mounting** — `app.include_router(trips.router, prefix="/api")`.
 
 ### `routers/trips.py`
 
-One endpoint: `POST /api/trips/search`.
+One endpoint: `POST /api/trips/search` → `list[TripSuggestion]`.
 
-```python
-@router.post("/search", response_model=list[TripSuggestion])
-async def search_trips(query: TripQuery) -> list[TripSuggestion]:
-```
+FastAPI + Pydantic handles all input validation automatically. Invalid `budget_usd`, out-of-range `duration_days`, or missing required fields all return `422 Unprocessable Entity` with field-level details — no custom validation code needed.
 
-FastAPI handles request validation automatically: if `budget_usd = 0` arrives in the body, Pydantic raises a `ValidationError` and FastAPI returns a `422 Unprocessable Entity` with field-level error details — no custom validation code needed.
-
-The endpoint separates orchestrator failures (external APIs down → 502) from AI ranker failures (Claude down → 502), logging each distinctly. If the orchestrator returns an empty list (no combos fit the budget), the endpoint returns `200 []` rather than a 4xx — it's a valid result, just an unfortunate one.
+The endpoint returns `200 []` (not 4xx) when no combos fit the budget — it's a valid result.
 
 ### Interactive API docs
 
-FastAPI auto-generates Swagger UI at `http://localhost:8000/docs`. You can test the search endpoint directly from the browser without needing a frontend or curl.
+Swagger UI at `http://localhost:8000/docs` — test the endpoint directly without needing the frontend.
 
 ---
 
 ## 9. Configuration
 
-`backend/config.py` uses Pydantic Settings to manage environment variables:
+`backend/config.py` uses Pydantic Settings:
 
 ```python
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    anthropic_api_key: str = ""
-    amadeus_api_key: str = ""
-    amadeus_api_secret: str = ""
+    duffel_api_key: str = ""
+    groq_api_key: str = ""
     ticketmaster_api_key: str = ""
-
-settings = Settings()
+    frontend_url: str = "http://localhost:5173"
 ```
 
-**All fields default to empty strings**, which means the app starts without crashing even if no `.env` file exists. This is intentional for the mock-first development approach: without any keys set, the full pipeline runs (Amadeus calls will fail and fall back, but mock agents produce results) and Claude calls will fail with an auth error (triggering the `_fallback_ranking` path).
+**All fields default to empty strings** — the app starts without crashing even if no `.env` exists. Duffel calls will fail and return empty results; Groq will fall back to cost-sort. The full pipeline still runs with mock data.
 
-Copy `.env.example` to `backend/.env` and fill in real keys to enable the live integrations.
+### Required env vars (backend)
 
-The `settings` singleton is created at import time and shared across all modules. Agents access it via `from config import settings`.
+| Variable | Where to get it | Effect if missing |
+|---|---|---|
+| `DUFFEL_API_KEY` | duffel.com dashboard | All flight results empty; orchestrator returns [] |
+| `GROQ_API_KEY` | console.groq.com | Falls back to cost-sort ranking |
+| `FRONTEND_URL` | Your deployed frontend URL | CORS blocks browser requests |
+| `TICKETMASTER_API_KEY` | developer.ticketmaster.com | Ticketmaster stub returns [] (already the case) |
+
+### Frontend env vars
+
+| Variable | Where set | Notes |
+|---|---|---|
+| `VITE_API_URL` | Render Static Site env vars | Build-time — must redeploy frontend after changing |
 
 ---
 
-## 10. Test Suite
+## 10. Frontend
 
-All tests live in `backend/tests/`. Run from the project root with `pytest`.
+The frontend is a single-page React app built with Vite + TypeScript + Tailwind CSS. No routing library (single page), no state management library (local `useState`), no UI component library (custom Tailwind components).
+
+### Components
+
+**`App.tsx`** — root component. Owns search state (loading, error, results). Renders the hero section, `SearchForm`, results grid, and footer.
+
+**`SearchForm.tsx`** — the search form. Fields: flying from (airport autocomplete), budget, days, travelers, departure date (optional). Validates that an airport has been selected before enabling submit. Shows a visible error if budget is below $500.
+
+**`AirportInput.tsx`** — combobox autocomplete for the flying-from field. Searches `airports.ts` client-side as the user types (≥2 chars). Filters on city name, IATA code, airport name, or country. Supports keyboard navigation (↑↓ arrows, Enter to select, Escape to close). Displays `{city} ({IATA})` after selection; sends only the IATA code to the parent.
+
+**`TripCard.tsx`** — result card for one `TripSuggestion`. Shows rank badge (gold/silver/bronze), destination name, AI summary, cost breakdown, highlights, and booking links. Includes an amber disclaimer strip noting that flight prices are from sandbox data and may differ from real fares.
+
+### `api.ts`
+
+Thin fetch wrapper. `VITE_API_URL` (set at build time) determines the backend URL; falls back to `http://localhost:8000` for local dev. No retries or caching — every search is a fresh request.
+
+### `data/airports.ts`
+
+~250 major commercial airports worldwide, covering US, Canada, Mexico, Caribbean, Central/South America, Europe, Middle East, Africa, South/Southeast/East Asia, and Oceania. Static TypeScript array — no API needed. Can be extended by adding entries to the array.
+
+---
+
+## 11. Test Suite
+
+All tests in `backend/tests/`. Run from the project root.
+
+**88 tests, all passing.** Run time: < 5 seconds (all network calls mocked).
 
 ### Test philosophy
 
-- **No real API calls.** All network calls are mocked. Tests run offline and complete in under 5 seconds.
-- **Test behavior, not implementation.** Tests assert on what comes out, not on internal method calls. If the implementation changes but the behavior stays the same, tests should still pass.
-- **Each test proves one thing.** Long test functions with multiple assertions usually indicate the test should be split.
+- No real API calls — all network calls mocked. Tests run offline.
+- Test behavior, not implementation — if internals change but outputs stay the same, tests pass.
+- Each test proves one thing.
 
-### `conftest.py` — shared fixtures
+### Test files
 
-Defines reusable Pydantic model instances used across test files:
-
-- `sample_query` — a `TripQuery` for 2 people, 4 days, $2,000 from ATL
-- `sample_flight` / `sample_hotel` / `sample_car` / `sample_attraction` — individual `ProviderResult` objects
-- `sample_combo` — a full `TripCombo` assembled from the above
-- `sample_suggestion` — a `TripSuggestion` for router response-shape tests
-
-### `test_models.py` — data validation
-
-Tests Pydantic constraints: zero budget rejected, duration out of 1-30 range rejected, traveler count out of 1-10 range rejected, boundary values accepted. Also tests the `TripCombo.breakdown` property with various combinations of car/no-car and attraction counts.
-
-### `test_agents.py` — agent behavior
-
-Tests each agent category:
-- Stub agents (`SkyscannerAgent`, `ExpediaAgent`, `TicketmasterAgent`) always return `[]`
-- Mock agents return correctly shaped results for known IATA codes
-- `ViatorAgent` is parametrized across all 15 pool destinations to catch missing entries
-- Price scaling by traveler count is verified with tight bounds (e.g. `$49 × 2 travelers × ±5%`)
-
-### `test_orchestrator.py` — orchestration logic
-
-Tests `_pick_best` and `_pick_attractions` directly as unit tests (they're pure functions, easy to test). Tests `find_trips` using `unittest.mock.AsyncMock` to replace the factory classes:
-
-```python
-with patch("orchestrator.FlightProviderFactory") as MockFF:
-    MockFF.return_value.search_all = AsyncMock(return_value=[cheap_flight, pricier_flight])
-    combos = await find_trips(base_query)
-```
-
-Key scenarios covered: no pool flights → returns [], combos over budget → filtered out, duplicate IATA codes in flight results → deduplicated to cheapest, agent exception → combo skipped gracefully, results returned sorted by cost.
-
-### `test_ai_analyzer.py` — Claude integration
-
-Mocks `anthropic.AsyncAnthropic` to control what Claude "returns":
-
-```python
-with patch("ai_analyzer.anthropic.AsyncAnthropic") as MockClient:
-    MockClient.return_value.messages.create = AsyncMock(return_value=mock_response)
-    suggestions = await rank_trips([sample_combo], query)
-```
-
-Tests the happy path (tool called, rankings parsed), fallback paths (tool not called, API exception), edge cases (Claude returns an IATA not in our combo list → skipped), and that `_fallback_ranking` sorts correctly and caps at 3 results.
-
-### `test_router.py` — HTTP contract
-
-Uses FastAPI's `TestClient` (synchronous wrapper around the ASGI app) with mocked orchestrator and analyzer. Tests input validation (422s for missing/invalid fields), response shape, and 502 error paths when either orchestrator or AI analyzer raises.
+| File | What it covers |
+|------|---------------|
+| `test_models.py` | Pydantic validation: zero budget, out-of-range values, boundary conditions, `TripCombo.breakdown` property |
+| `test_agents.py` | Stub agents return `[]`; mock agents return correct shapes; price scaling by traveler count; all 15 destinations covered by ViatorAgent |
+| `test_orchestrator.py` | `_pick_best` unit tests; `find_trips` with AsyncMock factories; no-results, over-budget, duplicate IATA, and agent-exception scenarios |
+| `test_ai_analyzer.py` | Groq happy path; malformed response fallback; API exception fallback; `_fallback_ranking` sort order |
+| `test_router.py` | HTTP 422 on invalid input; response shape; 502 when orchestrator or analyzer raises |
 
 ---
 
-## 11. Running Locally
+## 12. Running Locally
 
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. Set up environment
-cp .env.example backend/.env
-# Edit backend/.env — at minimum add ANTHROPIC_API_KEY for AI ranking
-# AMADEUS keys are needed for real flight data; omit to use inspiration fallback
-
-# 3. Start the backend
+```powershell
+# Backend
 cd backend
+pip install -r requirements.txt
+# Create backend/.env with DUFFEL_API_KEY and GROQ_API_KEY
 uvicorn main:app --reload
-# API at http://localhost:8000
-# Swagger UI at http://localhost:8000/docs
+# API: http://localhost:8000
+# Swagger: http://localhost:8000/docs
 
-# 4. Run tests (from project root)
-pytest            # all tests
-pytest -v         # verbose output
-pytest backend/tests/test_agents.py -v    # single file
-pytest -k "orchestrator"                  # tests matching keyword
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
+# App: http://localhost:5173
+
+# Tests (from project root)
+python -m pytest backend/tests/ -v
+```
+
+Sample request body:
+```json
+{
+  "origin_iata": "JFK",
+  "budget_usd": 2000,
+  "duration_days": 7,
+  "travelers": 1
+}
 ```
 
 ---
 
-## 12. Extending the System
+## 13. Extending the System
 
-### Adding a new provider to an existing category
+### Adding a new flight/hotel/car/attraction provider
 
-Example: add Hotels.com to the hotel category.
+1. Create `backend/agents/{category}/{provider}_agent.py`
+2. Implement `TravelAgent` — `provider_name` property + `async search()` method returning `list[ProviderResult]`
+3. Register it in the matching factory's `get_agents()` list
+4. Add tests in `test_agents.py`
 
-1. Create `backend/agents/hotels/hotelscom_agent.py`
-2. Implement `TravelAgent`:
-   ```python
-   class HotelsComAgent(TravelAgent):
-       @property
-       def provider_name(self) -> str:
-           return "hotels_com"
-
-       async def search(self, query: SearchQuery) -> list[ProviderResult]:
-           # ... call Hotels.com API, return list[ProviderResult]
-   ```
-3. Register it in `backend/factories/hotel_factory.py`:
-   ```python
-   def get_agents(self) -> list[TravelAgent]:
-       return [BookingAgent(), HotelsComAgent()]
-   ```
-4. Add tests in `backend/tests/test_agents.py`
-
-That's it. The orchestrator, AI analyzer, and router are completely unchanged.
+The orchestrator, AI analyzer, and router are untouched.
 
 ### Adding a new destination
 
-Edit `backend/data/destinations.json` and add a new object with the required fields. Then add mock data entries for the new IATA code in `booking_agent.py`, `enterprise_agent.py`, and `viator_agent.py`. The orchestrator picks it up automatically on next restart.
+1. Add an entry to `backend/data/destinations.json`
+2. Add mock data for the new IATA in `booking_agent.py`, `enterprise_agent.py`, `viator_agent.py`
+3. Restart the backend — picked up automatically
 
-### Replacing a mock agent with a real one
+### Replacing a mock agent with a real API
 
-When a partner API becomes available, the swap is confined to a single file. Keep the `_mock_search` function in the file (commented out or behind a flag) until the real API is proven stable in production.
+Swap `_mock_search()` for `_real_search()` in the agent file. Keep the mock function commented out until the real API is stable in production. Factory registration, orchestrator, and tests are unaffected.
 
 ---
 
 ## Open Items
 
-- [ ] React frontend (Task #5) — Vite + TypeScript + Tailwind + shadcn/ui
-- [ ] Redis caching layer — cache hotel/attraction results for 30 min (prices are stable)
-- [ ] Skyscanner partner approval — stub currently in place
-- [ ] Booking.com / Expedia partner approval — mock currently in place
-- [ ] Flexible date handling — currently defaults to 30 days out if no date given
-- [ ] User accounts + saved trips — Phase 2
+| Item | Status |
+|------|--------|
+| Duffel production key | Apply at duffel.com — live URL now available |
+| Booking.com affiliate ID | Apply at affiliate.booking.com |
+| Skyscanner partner ID | Apply at partners.skyscanner.net |
+| Viator partner approval | Apply at viator.com/partner |
+| Ticketmaster API key | Apply at developer.ticketmaster.com |
+| Privacy Policy page | Required before affiliate applications |
+| Terms of Use page | Required before affiliate applications |
+| Favicon | Brand polish |
+| Redis caching | Hotel/attraction prices stable for 30 min — cache to reduce mock variability and future API costs |
+| User accounts + saved trips | Phase 3 |
 
 ---
 
-*This document is updated alongside the code. When new features land, add a section here.*
+*This document is updated alongside the code. When new features land, update the relevant section.*
