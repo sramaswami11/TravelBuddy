@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 export function TermsOfUse() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-indigo-900 px-6 py-4">
+      <header className="bg-indigo-900 px-6 py-4 flex items-center justify-between">
         <Link to="/" className="text-2xl font-black text-white tracking-tight">
           packed<span className="text-yellow-400">N</span>booked
+        </Link>
+        <Link to="/" className="text-indigo-300 text-sm hover:text-white transition-colors">
+          ← Home
         </Link>
       </header>
 

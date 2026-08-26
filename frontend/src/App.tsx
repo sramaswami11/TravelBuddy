@@ -42,7 +42,7 @@ function HomePage() {
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-600 py-14 px-4">
         <div className="max-w-3xl mx-auto text-center mb-10">
-          <h1 className="text-5xl font-black text-white tracking-tight">
+          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
             packed<span className="text-yellow-400">N</span>booked
           </h1>
           <p className="mt-3 text-indigo-200 text-lg">
@@ -95,6 +95,45 @@ function HomePage() {
           </p>
         )}
       </div>
+
+      {/* How it works — shown only on landing */}
+      {!searched && (
+        <div className="bg-white border-t border-gray-100 py-14 px-4">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">How it works</h2>
+            <p className="text-center text-gray-400 text-sm mb-10">
+              From budget to booked in seconds.
+            </p>
+            <div className="grid gap-8 sm:grid-cols-3">
+              {[
+                {
+                  step: '1',
+                  title: 'Set your budget',
+                  desc: 'Enter your travel budget, departure city, trip length, and number of travelers. No account needed.',
+                },
+                {
+                  step: '2',
+                  title: 'We search everything',
+                  desc: 'We scan real flights, hotels, car rentals, and activities across providers — all at once, in seconds.',
+                },
+                {
+                  step: '3',
+                  title: 'Book your perfect trip',
+                  desc: 'Get AI-ranked complete trip packages. Compare costs and highlights, then book each piece directly.',
+                },
+              ].map(({ step, title, desc }) => (
+                <div key={step} className="flex flex-col items-center text-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg font-bold shrink-0">
+                    {step}
+                  </div>
+                  <h3 className="font-semibold text-gray-800">{title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-100 py-6 px-4 mt-auto">
