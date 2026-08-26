@@ -27,7 +27,7 @@ _DAY_RATES: dict[str, dict] = {
 }
 _DEFAULT_RATES = {"economy": 45, "standard": 65, "suv": 90}
 
-_ENTERPRISE_AFFILIATE = "https://www.enterprise.com/en/car-rental/locations/"
+_ENTERPRISE_AFFILIATE = "https://www.rentalcars.com/"
 
 
 class EnterpriseAgent(TravelAgent):

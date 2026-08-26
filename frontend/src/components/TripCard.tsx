@@ -108,7 +108,7 @@ export function TripCard({ trip }: Props) {
 
       <div className="px-5 py-2 bg-amber-50 border-t border-amber-100">
         <p className="text-xs text-amber-700">
-          ⚠ Flight prices are estimates and may differ from actual fares. Always confirm on the booking site before purchasing.
+          ⚠ All prices are estimates. Flight, hotel, car rental, and activity costs may differ from actual rates. Always confirm on the booking site before purchasing.
         </p>
       </div>
     </div>
