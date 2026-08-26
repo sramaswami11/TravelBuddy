@@ -26,6 +26,8 @@ export interface TripSuggestion {
     car_rental: string | null;
     attractions: string | null;
   };
+  departure_date: string;
+  return_date: string;
 }
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';

@@ -50,3 +50,5 @@ class TripSuggestion(BaseModel):
     highlights: list[str]
     ranking_reason: str
     affiliate_links: dict[str, Optional[str]]
+    departure_date: str = ""
+    return_date: str = ""

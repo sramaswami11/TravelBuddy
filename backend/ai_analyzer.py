@@ -136,6 +136,8 @@ async def rank_trips(combos: list[TripCombo], query: TripQuery) -> list[TripSugg
                     "car_rental": combo.car_rental.affiliate_url if combo.car_rental else None,
                     "attractions": combo.attractions[0].affiliate_url if combo.attractions else None,
                 },
+                departure_date=combo.flight.details.get("departure_date", ""),
+                return_date=combo.flight.details.get("return_date", ""),
             )
         )
 
@@ -168,6 +170,8 @@ def _fallback_ranking(combos: list[TripCombo], query: TripQuery) -> list[TripSug
                 "car_rental": c.car_rental.affiliate_url if c.car_rental else None,
                 "attractions": c.attractions[0].affiliate_url if c.attractions else None,
             },
+            departure_date=c.flight.details.get("departure_date", ""),
+            return_date=c.flight.details.get("return_date", ""),
         )
         for i, c in enumerate(top)
     ]

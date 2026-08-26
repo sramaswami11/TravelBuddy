@@ -8,6 +8,13 @@ const RANK_STYLES = [
 
 const RANK_LABELS = ['#1', '#2', '#3'];
 
+function formatDate(iso: string): string {
+  if (!iso) return '';
+  const [year, month, day] = iso.split('-');
+  const d = new Date(Number(year), Number(month) - 1, Number(day));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 interface Props {
   trip: TripSuggestion;
 }
@@ -51,6 +58,13 @@ export function TripCard({ trip }: Props) {
           {RANK_LABELS[rankIdx] ?? `#${trip.rank}`}
         </span>
       </div>
+
+      {trip.departure_date && (
+        <div className="px-5 py-2 bg-indigo-50 border-b border-indigo-100 flex items-center gap-2 text-xs text-indigo-700 font-medium">
+          <span>✈</span>
+          <span>{formatDate(trip.departure_date)} → {formatDate(trip.return_date)}</span>
+        </div>
+      )}
 
       <div className="px-5 py-4 flex-1 space-y-4">
         <p className="text-gray-600 text-sm leading-relaxed">{trip.ai_summary}</p>
