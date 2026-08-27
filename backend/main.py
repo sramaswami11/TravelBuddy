@@ -17,8 +17,13 @@ app = FastAPI(
     version="0.1.0",
 )
 
-_origins = ["http://localhost:5173", "http://localhost:3000"]
-if settings.frontend_url:
+_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://packednbooked.com",
+    "https://www.packednbooked.com",
+]
+if settings.frontend_url and settings.frontend_url not in _origins:
     _origins.append(settings.frontend_url)
 
 app.add_middleware(
