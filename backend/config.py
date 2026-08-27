@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     duffel_api_key: str = ""
     ticketmaster_api_key: str = ""
     frontend_url: str = ""
+    travelpayouts_token: str = ""
+    travelpayouts_marker: str = ""
 
 
 settings = Settings()
