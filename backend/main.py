@@ -34,3 +34,14 @@ app.add_middleware(
 )
 
 app.include_router(trips.router, prefix="/api")
+
+logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def _log_config() -> None:
+    logger.info(
+        "Config: token_len=%d marker=%s frontend_url=%s",
+        len(settings.travelpayouts_token),
+        settings.travelpayouts_marker,
+        settings.frontend_url,
+    )
