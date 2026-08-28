@@ -1,5 +1,4 @@
 import logging
-import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,21 +37,3 @@ app.include_router(trips.router, prefix="/api")
 
 logger = logging.getLogger(__name__)
 
-@app.on_event("startup")
-async def _log_config() -> None:
-    token_env = os.environ.get("TRAVELPAYOUTS_TOKEN", "")
-    logger.info(
-        "Config: pydantic_token_len=%d os_env_token_len=%d marker=%s",
-        len(settings.travelpayouts_token),
-        len(token_env),
-        settings.travelpayouts_marker,
-    )
-
-@app.get("/debug/config")
-async def debug_config():
-    return {
-        "pydantic_token_len": len(settings.travelpayouts_token),
-        "os_env_token_len": len(os.environ.get("TRAVELPAYOUTS_TOKEN", "")),
-        "marker": settings.travelpayouts_marker,
-        "frontend_url": settings.frontend_url,
-    }
