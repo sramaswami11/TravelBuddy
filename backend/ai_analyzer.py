@@ -67,7 +67,8 @@ async def rank_trips(combos: list[TripCombo], query: TripQuery) -> list[TripSugg
         f"accommodation, transport, and activities.\n\n"
         f"Reply with ONLY a JSON array (no markdown, no explanation) of {n} objects, each with:\n"
         f"  rank (int 1-{n}), destination_iata (string), ai_summary (2-3 sentences),\n"
-        f"  highlights (array of 3-5 strings), ranking_reason (one sentence)"
+        f"  highlights (array of 3-5 strings), ranking_reason (one sentence)\n"
+        f"Use only plain ASCII punctuation (hyphens, straight quotes). No curly quotes, em dashes, or non-ASCII characters."
     )
 
     try:
