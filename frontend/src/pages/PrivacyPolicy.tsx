@@ -14,7 +14,7 @@ export function PrivacyPolicy() {
 
       <main className="max-w-3xl mx-auto w-full px-6 py-12 flex-1">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-        <p className="text-sm text-gray-400 mb-10">Last updated: August 25, 2026</p>
+        <p className="text-sm text-gray-400 mb-10">Last updated: September 4, 2026</p>
 
         <div className="prose prose-gray max-w-none space-y-8 text-gray-700 leading-relaxed">
 
@@ -56,9 +56,23 @@ export function PrivacyPolicy() {
             <h3 className="font-semibold text-gray-700 mt-4 mb-2">Cookies</h3>
             <p>
               We may use cookies or similar technologies to maintain session state and improve
-              performance. We do not use cookies for advertising or cross-site tracking. You can
-              disable cookies in your browser settings; the Service will continue to function
-              without them.
+              performance. You can disable cookies in your browser settings; the Service will
+              continue to function without them.
+            </p>
+            <p className="mt-3">
+              When you click an affiliate link on our site, third-party affiliate networks —
+              including <strong>Commission Junction (CJ Affiliate)</strong> — may set tracking
+              cookies on your browser to attribute any resulting booking commission to us. These
+              cookies are governed by CJ's own privacy policy. You can learn more at the{' '}
+              <a
+                href="https://www.conversantmedia.com/legal/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:underline"
+              >
+                CJ Affiliate Services Privacy Policy
+              </a>
+              .
             </p>
           </section>
 
@@ -80,9 +94,11 @@ export function PrivacyPolicy() {
             <h2 className="text-xl font-semibold text-gray-800 mb-3">4. Affiliate Links & Third-Party Services</h2>
             <p>
               packedNbooked displays results with links to third-party travel booking platforms
-              including Booking.com, Skyscanner, Viator, and others. When you click one of these
-              links and complete a booking, we may earn an affiliate commission at no additional
-              cost to you.
+              including Booking.com, Aviasales, Hotellook, Viator, and Rentalcars.com. When you
+              click one of these links and complete a booking, we may earn an affiliate commission
+              at no additional cost to you. Our affiliate partnerships are managed through{' '}
+              <strong>Commission Junction (CJ Affiliate)</strong>, Travelpayouts, and direct
+              affiliate programs.
             </p>
             <p className="mt-3">
               These third-party platforms have their own privacy policies and data practices, which
@@ -96,13 +112,18 @@ export function PrivacyPolicy() {
                 </a>
               </li>
               <li>
-                <a href="https://www.skyscanner.net/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                  Skyscanner Privacy Policy
+                <a href="https://www.aviasales.com/privacy_policy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                  Aviasales Privacy Policy
                 </a>
               </li>
               <li>
                 <a href="https://www.viator.com/support/privacyPolicy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                   Viator Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a href="https://www.conversantmedia.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                  CJ Affiliate Services Privacy Policy
                 </a>
               </li>
             </ul>
