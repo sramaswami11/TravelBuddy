@@ -65,7 +65,7 @@ export function PrivacyPolicy() {
               cookies on your browser to attribute any resulting booking commission to us. These
               cookies are governed by CJ's own privacy policy. You can learn more at the{' '}
               <a
-                href="https://www.conversantmedia.com/legal/privacy"
+                href="https://www.cj.com/legal/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-indigo-600 hover:underline"
@@ -122,7 +122,7 @@ export function PrivacyPolicy() {
                 </a>
               </li>
               <li>
-                <a href="https://www.conversantmedia.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                <a href="https://www.cj.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                   CJ Affiliate Services Privacy Policy
                 </a>
               </li>
