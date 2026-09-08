@@ -6,5 +6,4 @@ class HotelProviderFactory(TravelProviderFactory):
     def get_agents(self) -> list[TravelAgent]:
         return [
             BookingAgent(),
-            # ExpediaAgent(),  # add when partner access is approved
         ]

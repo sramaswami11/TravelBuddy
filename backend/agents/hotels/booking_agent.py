@@ -1,11 +1,14 @@
 """
-Booking.com affiliate partner API requires approval (apply at booking.com/affiliate-program).
-Until approved, this agent returns realistic mock data so the full pipeline runs end-to-end.
-Swap _mock_search for _real_search once you have credentials.
+Hotel agent with mock pricing and real Hotellook affiliate links (Travelpayouts marker).
+Prices are estimated — the ~$ prefix on the UI sets user expectation.
+Affiliate links go to search.hotellook.com where users see real prices and book.
+Replace with a real hotel data API once one is identified.
 """
 import random
 import logging
+from datetime import date, timedelta
 
+from config import settings
 from factories.base import TravelAgent
 from models.query import SearchQuery
 from models.results import ProviderCategory, ProviderResult
@@ -105,13 +108,23 @@ _HOTEL_TEMPLATES: dict[str, list[dict]] = {
     ],
 }
 
-_BOOKING_AFFILIATE_BASE = "https://www.booking.com/searchresults.html?aid=YOUR_AFFILIATE_ID&ss="
+def _hotellook_url(query: SearchQuery) -> str:
+    check_in = query.departure_date or (date.today() + timedelta(days=30))
+    check_out = check_in + timedelta(days=query.duration_days)
+    return (
+        f"https://search.hotellook.com/"
+        f"?destination={query.destination_iata}"
+        f"&checkIn={check_in.isoformat()}"
+        f"&checkOut={check_out.isoformat()}"
+        f"&adults={query.travelers}"
+        f"&marker={settings.travelpayouts_marker}"
+    )
 
 
 class BookingAgent(TravelAgent):
     @property
     def provider_name(self) -> str:
-        return "booking.com"
+        return "hotellook"
 
     async def search(self, query: SearchQuery) -> list[ProviderResult]:
         return self._mock_search(query)
@@ -121,6 +134,7 @@ class BookingAgent(TravelAgent):
         if not templates:
             return []
 
+        affiliate_url = _hotellook_url(query)
         results = []
         for hotel in templates:
             nightly = hotel["base_rate"] * random.uniform(0.85, 1.15)
@@ -138,9 +152,8 @@ class BookingAgent(TravelAgent):
                         "stars": hotel["stars"],
                         "nightly_rate": round(nightly, 2),
                         "nights": query.duration_days,
-                        "mock": True,
                     },
-                    affiliate_url=f"{_BOOKING_AFFILIATE_BASE}{query.destination_iata}",
+                    affiliate_url=affiliate_url,
                 )
             )
 

@@ -102,6 +102,7 @@ _ATTRACTIONS: dict[str, list[dict]] = {
 }
 
 _VIATOR_AFFILIATE_BASE = "https://www.viator.com/search/"
+_VIATOR_AFFILIATE_PARAMS = "pid=P00319033&mcid=42383&medium=link"
 
 
 class ViatorAgent(TravelAgent):
@@ -128,7 +129,7 @@ class ViatorAgent(TravelAgent):
                         "travelers": query.travelers,
                         "mock": True,
                     },
-                    affiliate_url=f"{_VIATOR_AFFILIATE_BASE}{query.destination_iata}",
+                    affiliate_url=f"{_VIATOR_AFFILIATE_BASE}{query.destination_iata}?{_VIATOR_AFFILIATE_PARAMS}",
                 )
             )
 
