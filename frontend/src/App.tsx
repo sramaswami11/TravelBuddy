@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { searchTrips, TripQuery, TripSuggestion } from './api';
+import { trackSearch } from './analytics';
 import { SearchForm } from './components/SearchForm';
 import { TripCard } from './components/TripCard';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
@@ -26,6 +27,7 @@ function HomePage() {
     setLoading(true);
     setError(null);
     setSearched(true);
+    trackSearch(query.origin_iata, query.budget_usd, query.duration_days);
     try {
       const data = await searchTrips(query);
       setResults(data);

@@ -1,4 +1,5 @@
 import { TripSuggestion } from '../api';
+import { trackAffiliateClick } from '../analytics';
 
 const RANK_STYLES = [
   'bg-yellow-400 text-yellow-900',
@@ -19,13 +20,14 @@ interface Props {
   trip: TripSuggestion;
 }
 
-function BookLink({ href, label }: { href: string | null; label: string }) {
+function BookLink({ href, label, linkType, destination }: { href: string | null; label: string; linkType: string; destination: string }) {
   if (!href) return null;
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => trackAffiliateClick(linkType, destination)}
       className="inline-block rounded px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
     >
       {label}
@@ -37,10 +39,10 @@ export function TripCard({ trip }: Props) {
   const rankIdx = trip.rank - 1;
 
   const breakdown = [
-    { label: 'Flight', value: trip.breakdown.flight, link: trip.affiliate_links.flight, linkLabel: 'Book flight' },
-    { label: 'Hotel', value: trip.breakdown.hotel, link: trip.affiliate_links.hotel, linkLabel: 'Book hotel' },
-    { label: 'Car rental', value: trip.breakdown.car_rental, link: trip.affiliate_links.car_rental, linkLabel: 'Book car' },
-    { label: 'Activities', value: trip.breakdown.attractions, link: trip.affiliate_links.attractions, linkLabel: 'Browse activities' },
+    { label: 'Flight', type: 'flight', value: trip.breakdown.flight, link: trip.affiliate_links.flight, linkLabel: 'Book flight' },
+    { label: 'Hotel', type: 'hotel', value: trip.breakdown.hotel, link: trip.affiliate_links.hotel, linkLabel: 'Book hotel' },
+    { label: 'Car rental', type: 'car_rental', value: trip.breakdown.car_rental, link: trip.affiliate_links.car_rental, linkLabel: 'Book car' },
+    { label: 'Activities', type: 'activities', value: trip.breakdown.attractions, link: trip.affiliate_links.attractions, linkLabel: 'Browse activities' },
   ];
 
   return (
@@ -101,8 +103,8 @@ export function TripCard({ trip }: Props) {
       </div>
 
       <div className="px-5 py-3 bg-gray-50 border-t flex flex-wrap gap-2">
-        {breakdown.map(({ link, linkLabel }) => (
-          <BookLink key={linkLabel} href={link} label={linkLabel} />
+        {breakdown.map(({ link, linkLabel, type }) => (
+          <BookLink key={linkLabel} href={link} label={linkLabel} linkType={type} destination={trip.destination_iata} />
         ))}
       </div>
 
