@@ -1,6 +1,6 @@
 """
 Mock car rental agent using realistic day rates per destination.
-Swap for real Enterprise / CARS API when partner access is available.
+Affiliate links go to DiscoverCars.com (affiliate ID: sramaswami).
 """
 import random
 
@@ -27,13 +27,13 @@ _DAY_RATES: dict[str, dict] = {
 }
 _DEFAULT_RATES = {"economy": 45, "standard": 65, "suv": 90}
 
-_ENTERPRISE_AFFILIATE = "https://www.rentalcars.com/"
+_DISCOVERCARS_AFFILIATE = "https://www.discovercars.com/?a_aid=sramaswami"
 
 
 class EnterpriseAgent(TravelAgent):
     @property
     def provider_name(self) -> str:
-        return "enterprise"
+        return "discovercars"
 
     async def search(self, query: SearchQuery) -> list[ProviderResult]:
         rates = _DAY_RATES.get(query.destination_iata, _DEFAULT_RATES)
@@ -48,7 +48,7 @@ class EnterpriseAgent(TravelAgent):
                     category=ProviderCategory.CAR_RENTAL,
                     destination_iata=query.destination_iata,
                     destination_name=query.destination_name or query.destination_iata,
-                    title=f"Enterprise {car_class.title()} Car",
+                    title=f"DiscoverCars {car_class.title()} Car",
                     price_usd=total,
                     details={
                         "class": car_class,
@@ -56,7 +56,7 @@ class EnterpriseAgent(TravelAgent):
                         "days": query.duration_days,
                         "mock": True,
                     },
-                    affiliate_url=_ENTERPRISE_AFFILIATE,
+                    affiliate_url=_DISCOVERCARS_AFFILIATE,
                 )
             )
 
