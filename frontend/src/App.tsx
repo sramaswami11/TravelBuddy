@@ -40,11 +40,11 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col overflow-x-hidden">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-600 py-14 px-4">
+      <div className="bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-600 py-14 px-4 overflow-hidden">
         <div className="max-w-3xl mx-auto text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
             packed<span className="text-yellow-400">N</span>booked
           </h1>
           <p className="mt-3 text-indigo-200 text-lg">

@@ -42,7 +42,7 @@ export function SearchForm({ onSearch, loading }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
+        <div className="min-w-0">
           <label className={labelClass}>Flying from</label>
           <AirportInput
             value={originIata}
@@ -51,7 +51,7 @@ export function SearchForm({ onSearch, loading }: Props) {
             required
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className={labelClass}>Budget (USD)</label>
           <input
             className={`${inputClass} ${budgetError ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : ''}`}
@@ -67,7 +67,7 @@ export function SearchForm({ onSearch, loading }: Props) {
           />
           {budgetError && <p className="mt-1 text-xs text-red-500">{budgetError}</p>}
         </div>
-        <div>
+        <div className="min-w-0">
           <label className={labelClass}>Days</label>
           <input
             className={inputClass}
@@ -79,7 +79,7 @@ export function SearchForm({ onSearch, loading }: Props) {
             onChange={e => setDays(e.target.value)}
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className={labelClass}>Travelers</label>
           <input
             className={inputClass}
@@ -92,8 +92,8 @@ export function SearchForm({ onSearch, loading }: Props) {
         </div>
       </div>
 
-      <div className="flex items-end gap-4">
-        <div className="flex-1 max-w-xs">
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="flex-1 sm:max-w-xs">
           <label className={labelClass}>Departure date (optional)</label>
           <input
             className={inputClass}
@@ -105,7 +105,7 @@ export function SearchForm({ onSearch, loading }: Props) {
         <button
           type="submit"
           disabled={loading || !originIata}
-          className="px-8 py-2 rounded-lg bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full sm:w-auto px-8 py-2 rounded-lg bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Searching…' : 'Find Trips'}
         </button>
