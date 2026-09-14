@@ -150,6 +150,9 @@ function HomePage() {
           </div>
           <span>© {new Date().getFullYear()} packedNbooked</span>
         </div>
+        <p className="max-w-5xl mx-auto mt-3 text-xs text-gray-400 text-center">
+          Some links on this site are affiliate links. If you book through them, we may earn a small commission at no extra cost to you.
+        </p>
       </footer>
     </div>
   );
