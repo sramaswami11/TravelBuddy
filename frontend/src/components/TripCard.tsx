@@ -74,15 +74,18 @@ export function TripCard({ trip }: Props) {
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Cost breakdown</p>
           <div className="space-y-1">
-            {breakdown.map(({ label, value }) => (
+            {breakdown.map(({ label, type, value }) => (
               <div key={label} className="flex justify-between text-sm">
                 <span className="text-gray-500">{label}</span>
-                <span className="font-medium text-gray-800">~${value.toFixed(0)}</span>
+                {type === 'hotel'
+                  ? <span className="font-medium text-indigo-600">See prices</span>
+                  : <span className="font-medium text-gray-800">~${value.toFixed(0)}</span>
+                }
               </div>
             ))}
             <div className="flex justify-between text-sm font-bold border-t pt-1 mt-1">
               <span className="text-gray-700">Total</span>
-              <span className="text-indigo-600">~${trip.total_cost.toFixed(0)}</span>
+              <span className="text-indigo-600">—</span>
             </div>
           </div>
         </div>
