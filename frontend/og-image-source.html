@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #312e81 0%, #4338ca 50%, #4f46e5 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Subtle background circles */
+  .circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .c1 { width: 500px; height: 500px; top: -150px; right: -100px; }
+  .c2 { width: 300px; height: 300px; bottom: -80px; left: -60px; }
+  .c3 { width: 200px; height: 200px; bottom: 60px; right: 200px; }
+
+  .content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 80px;
+  }
+
+  .logo {
+    font-size: 80px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .logo span {
+    color: #facc15;
+  }
+
+  .tagline {
+    font-size: 28px;
+    color: rgba(199, 210, 254, 0.95);
+    font-weight: 400;
+    margin-bottom: 44px;
+    letter-spacing: 0.2px;
+  }
+
+  .pills {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #e0e7ff;
+    font-size: 18px;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .domain {
+    position: absolute;
+    bottom: 36px;
+    right: 48px;
+    color: rgba(165, 180, 252, 0.7);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+  <div class="circle c3"></div>
+
+  <div class="content">
+    <div class="logo">packed<span>N</span>booked</div>
+    <div class="tagline">Tell us your budget. We'll find your perfect trip.</div>
+    <div class="pills">
+      <div class="pill">✈ Flights</div>
+      <div class="pill">🏨 Hotels</div>
+      <div class="pill">🚗 Car Rental</div>
+      <div class="pill">🎭 Activities</div>
+    </div>
+  </div>
+
+  <div class="domain">packednbooked.com</div>
+</body>
+</html>
