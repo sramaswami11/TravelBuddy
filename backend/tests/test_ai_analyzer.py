@@ -115,7 +115,7 @@ async def test_rank_trips_affiliate_links_populated(query, sample_combo):
         suggestions = await rank_trips([sample_combo], query)
 
     links = suggestions[0].affiliate_links
-    assert links["flight"] == "https://amadeus.example.com/flight/LAS"
+    assert links["flight"] == "https://www.aviasales.com/search/ATLLASXX?marker=326901"
     assert links["hotel"] == "https://booking.example.com/hotel/LAS"
     assert links["car_rental"] == "https://enterprise.example.com/car/LAS"
     assert links["attractions"] == "https://www.viator.com/search/LAS"

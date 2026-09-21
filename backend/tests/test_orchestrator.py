@@ -81,7 +81,7 @@ def base_query():
 
 def _pool_flight(iata: str, price: float) -> ProviderResult:
     return ProviderResult(
-        provider="amadeus",
+        provider="travelpayouts",
         category=ProviderCategory.FLIGHT,
         destination_iata=iata,
         destination_name=f"{iata} City",

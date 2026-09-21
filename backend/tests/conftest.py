@@ -12,13 +12,13 @@ def sample_query():
 @pytest.fixture
 def sample_flight():
     return ProviderResult(
-        provider="amadeus",
+        provider="travelpayouts",
         category=ProviderCategory.FLIGHT,
         destination_iata="LAS",
         destination_name="Las Vegas, United States",
         title="Round-trip flight ATL → LAS",
         price_usd=400.0,
-        affiliate_url="https://amadeus.example.com/flight/LAS",
+        affiliate_url="https://www.aviasales.com/search/ATLLASXX?marker=326901",
     )
 
 
@@ -86,7 +86,7 @@ def sample_suggestion():
         highlights=["Strip Night Tour ($98)", "Bellagio Hotel", "Economy Car included"],
         ranking_reason="Best value-for-money of all candidates.",
         affiliate_links={
-            "flight": "https://amadeus.example.com/flight/LAS",
+            "flight": "https://www.aviasales.com/search/ATLLASXX?marker=326901",
             "hotel": "https://booking.example.com/hotel/LAS",
             "car_rental": "https://enterprise.example.com/car/LAS",
             "attractions": "https://www.viator.com/search/LAS",
