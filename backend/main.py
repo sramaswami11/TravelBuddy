@@ -35,5 +35,10 @@ app.add_middleware(
 
 app.include_router(trips.router, prefix="/api")
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 logger = logging.getLogger(__name__)
 
