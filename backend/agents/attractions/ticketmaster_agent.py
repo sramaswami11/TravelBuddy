@@ -33,16 +33,22 @@ class TicketmasterAgent(TravelAgent):
         return "ticketmaster"
 
     async def search(self, query: SearchQuery) -> list[ProviderResult]:
-        if not settings.ticketmaster_api_key:
-            logger.debug("Ticketmaster API key not configured, skipping")
+        key = settings.ticketmaster_api_key
+        if not key:
+            logger.info("TM-DIAG: API key not set — skipping")
             return []
+
+        logger.info("TM-DIAG: key present (len=%d, prefix=%s)", len(key), key[:4])
 
         dest = _DEST_MAP.get(query.destination_iata or "")
         if not dest:
+            logger.info("TM-DIAG: destination %r not in pool — skipping", query.destination_iata)
             return []
 
         depart = query.departure_date or (date.today() + timedelta(days=30))
         ret = depart + timedelta(days=query.duration_days)
+
+        logger.info("TM-DIAG: querying %s (%s) %s → %s", dest["city"], dest["country_code"], depart, ret)
 
         try:
             async with httpx.AsyncClient() as client:
@@ -51,7 +57,7 @@ class TicketmasterAgent(TravelAgent):
                     params={
                         "city": dest["city"],
                         "countryCode": dest["country_code"],
-                        "apikey": settings.ticketmaster_api_key,
+                        "apikey": key,
                         "startDateTime": f"{depart.isoformat()}T00:00:00Z",
                         "endDateTime": f"{ret.isoformat()}T23:59:59Z",
                         "size": 5,
@@ -60,10 +66,11 @@ class TicketmasterAgent(TravelAgent):
                 )
                 resp.raise_for_status()
         except (httpx.HTTPStatusError, httpx.RequestError) as exc:
-            logger.warning("Ticketmaster search failed: %s", exc)
+            logger.warning("TM-DIAG: request failed: %s", exc)
             return []
 
         events = resp.json().get("_embedded", {}).get("events", [])
+        logger.info("TM-DIAG: %d events returned for %s", len(events), dest["city"])
         results = []
 
         _DEFAULT_PRICE = 75.0  # Ticketmaster rarely exposes priceRanges; use realistic fallback
