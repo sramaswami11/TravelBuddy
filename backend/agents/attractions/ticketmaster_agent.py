@@ -1,14 +1,30 @@
 """
 Ticketmaster Discovery API — free tier, 5,000 calls/day.
-Stub until API key is configured; returns empty list gracefully.
+Returns live events (concerts, sports, shows) for the destination city.
+Skips gracefully if API key is not configured.
 """
+import json
 import logging
+from datetime import date, timedelta
+from pathlib import Path
 
+import httpx
+
+from config import settings
 from factories.base import TravelAgent
 from models.query import SearchQuery
-from models.results import ProviderResult
+from models.results import ProviderCategory, ProviderResult
 
 logger = logging.getLogger(__name__)
+
+_API_BASE = "https://app.ticketmaster.com/discovery/v2"
+
+_DEST_MAP: dict[str, dict] = {
+    d["iata"]: d
+    for d in json.loads(
+        (Path(__file__).parent.parent.parent / "data" / "destinations.json").read_text()
+    )
+}
 
 
 class TicketmasterAgent(TravelAgent):
@@ -17,8 +33,70 @@ class TicketmasterAgent(TravelAgent):
         return "ticketmaster"
 
     async def search(self, query: SearchQuery) -> list[ProviderResult]:
-        # TODO: implement with Ticketmaster Discovery API
-        # GET https://app.ticketmaster.com/discovery/v2/events.json
-        #   ?city={city}&apikey={key}&startDateTime=...&endDateTime=...&size=5
-        logger.debug("Ticketmaster agent not yet implemented, skipping")
-        return []
+        if not settings.ticketmaster_api_key:
+            logger.debug("Ticketmaster API key not configured, skipping")
+            return []
+
+        dest = _DEST_MAP.get(query.destination_iata or "")
+        if not dest:
+            return []
+
+        depart = query.departure_date or (date.today() + timedelta(days=30))
+        ret = depart + timedelta(days=query.duration_days)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"{_API_BASE}/events.json",
+                    params={
+                        "city": dest["city"],
+                        "countryCode": dest["country_code"],
+                        "apikey": settings.ticketmaster_api_key,
+                        "startDateTime": f"{depart.isoformat()}T00:00:00Z",
+                        "endDateTime": f"{ret.isoformat()}T23:59:59Z",
+                        "size": 5,
+                    },
+                    timeout=15.0,
+                )
+                resp.raise_for_status()
+        except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+            logger.warning("Ticketmaster search failed: %s", exc)
+            return []
+
+        events = resp.json().get("_embedded", {}).get("events", [])
+        results = []
+
+        for event in events:
+            price_ranges = event.get("priceRanges", [])
+            if not price_ranges:
+                continue
+            price_per_person = price_ranges[0].get("min", 0)
+            if price_per_person <= 0:
+                continue
+
+            classification = (event.get("classifications") or [{}])[0]
+            segment = classification.get("segment", {}).get("name", "")
+            genre = classification.get("genre", {}).get("name", "")
+            category_label = f"{segment} · {genre}" if genre and genre not in ("Undefined", "") else segment
+
+            event_date = event.get("dates", {}).get("start", {}).get("localDate", "")
+
+            results.append(
+                ProviderResult(
+                    provider=self.provider_name,
+                    category=ProviderCategory.ATTRACTION,
+                    destination_iata=query.destination_iata,
+                    destination_name=query.destination_name or dest["city"],
+                    title=event["name"],
+                    price_usd=round(price_per_person * query.travelers, 2),
+                    details={
+                        "category": category_label,
+                        "date": event_date,
+                        "price_per_person": price_per_person,
+                        "travelers": query.travelers,
+                    },
+                    affiliate_url=event.get("url", f"https://www.ticketmaster.com/search?q={dest['city']}"),
+                )
+            )
+
+        return results
