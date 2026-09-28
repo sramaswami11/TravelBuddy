@@ -37,6 +37,11 @@ def _format_combo(combo: TripCombo, budget_usd: float) -> str:
     )
 
 
+def _attraction_link(attractions: list) -> str | None:
+    tm = next((a for a in attractions if a.provider == "ticketmaster"), None)
+    return (tm or attractions[0]).affiliate_url if attractions else None
+
+
 async def rank_trips(combos: list[TripCombo], query: TripQuery) -> list[TripSuggestion]:
     """
     Rank trip combos with Llama via Groq and return top 3 enriched TripSuggestions.
@@ -135,7 +140,7 @@ async def rank_trips(combos: list[TripCombo], query: TripQuery) -> list[TripSugg
                     "flight": combo.flight.affiliate_url,
                     "hotel": combo.hotel.affiliate_url,
                     "car_rental": combo.car_rental.affiliate_url if combo.car_rental else None,
-                    "attractions": combo.attractions[0].affiliate_url if combo.attractions else None,
+                    "attractions": _attraction_link(combo.attractions),
                 },
                 departure_date=combo.flight.details.get("departure_date", ""),
                 return_date=combo.flight.details.get("return_date", ""),
@@ -169,7 +174,7 @@ def _fallback_ranking(combos: list[TripCombo], query: TripQuery) -> list[TripSug
                 "flight": c.flight.affiliate_url,
                 "hotel": c.hotel.affiliate_url,
                 "car_rental": c.car_rental.affiliate_url if c.car_rental else None,
-                "attractions": c.attractions[0].affiliate_url if c.attractions else None,
+                "attractions": _attraction_link(c.attractions),
             },
             departure_date=c.flight.details.get("departure_date", ""),
             return_date=c.flight.details.get("return_date", ""),

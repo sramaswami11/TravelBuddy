@@ -24,7 +24,7 @@ _CAR_BUDGET_RATIO = 0.12
 _ATTRACTION_BUDGET_RATIO = 0.13
 
 _MAX_DESTINATIONS_TO_EVALUATE = 5
-_MAX_ATTRACTIONS_PER_COMBO = 2
+_MAX_ATTRACTIONS_PER_COMBO = 3
 
 
 def _pick_best(results: list[ProviderResult], budget: float) -> ProviderResult | None:
