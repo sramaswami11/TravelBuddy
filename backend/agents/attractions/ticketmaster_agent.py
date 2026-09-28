@@ -66,13 +66,14 @@ class TicketmasterAgent(TravelAgent):
         events = resp.json().get("_embedded", {}).get("events", [])
         results = []
 
+        _DEFAULT_PRICE = 75.0  # Ticketmaster rarely exposes priceRanges; use realistic fallback
+
         for event in events:
             price_ranges = event.get("priceRanges", [])
-            if not price_ranges:
-                continue
-            price_per_person = price_ranges[0].get("min", 0)
-            if price_per_person <= 0:
-                continue
+            price_per_person = price_ranges[0].get("min", 0) if price_ranges else 0
+            estimated = price_per_person <= 0
+            if estimated:
+                price_per_person = _DEFAULT_PRICE
 
             classification = (event.get("classifications") or [{}])[0]
             segment = classification.get("segment", {}).get("name", "")
@@ -94,6 +95,7 @@ class TicketmasterAgent(TravelAgent):
                         "date": event_date,
                         "price_per_person": price_per_person,
                         "travelers": query.travelers,
+                        "price_estimated": estimated,
                     },
                     affiliate_url=event.get("url", f"https://www.ticketmaster.com/search?q={dest['city']}"),
                 )

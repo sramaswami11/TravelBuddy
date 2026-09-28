@@ -140,6 +140,7 @@ async def test_result_fields(query, event_response):
     assert first.details["price_per_person"] == 75.0
     assert first.details["date"] == "2026-11-17"
     assert first.details["category"] == "Music · Rock"
+    assert first.details["price_estimated"] is False
 
 
 @pytest.mark.asyncio
@@ -160,12 +161,12 @@ async def test_price_multiplied_by_travelers(two_traveler_query, event_response)
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_events_without_prices_skipped(query):
+async def test_events_without_prices_use_default(query):
     payload = {
         "_embedded": {
             "events": [
                 {
-                    "name": "Free Concert",
+                    "name": "Metallica: Life Burns Faster",
                     "url": "https://www.ticketmaster.com/event/FREE",
                     "dates": {"start": {"localDate": "2026-11-16"}},
                     "priceRanges": [],
@@ -188,8 +189,14 @@ async def test_events_without_prices_skipped(query):
         mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_resp)
         results = await TicketmasterAgent().search(query)
 
-    assert len(results) == 1
-    assert results[0].title == "Paid Show"
+    assert len(results) == 2
+    no_price_result = results[0]
+    assert no_price_result.title == "Metallica: Life Burns Faster"
+    assert no_price_result.price_usd == 75.0
+    assert no_price_result.details["price_estimated"] is True
+    paid_result = results[1]
+    assert paid_result.price_usd == 50.0
+    assert paid_result.details["price_estimated"] is False
 
 
 # ---------------------------------------------------------------------------
