@@ -32,9 +32,7 @@ def unknown_query():
     )
 
 
-# --- Stub agents ---
-
-async def test_ticketmaster_stub_returns_empty(las_query):
+async def test_ticketmaster_returns_empty_when_no_api_key(las_query):
     assert await TicketmasterAgent().search(las_query) == []
 
 
