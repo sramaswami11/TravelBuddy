@@ -6,9 +6,10 @@ interface Props {
   onChange: (iata: string) => void;
   inputClass: string;
   required?: boolean;
+  id?: string;
 }
 
-export function AirportInput({ value, onChange, inputClass, required }: Props) {
+export function AirportInput({ value, onChange, inputClass, required, id }: Props) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
@@ -67,6 +68,7 @@ export function AirportInput({ value, onChange, inputClass, required }: Props) {
   return (
     <div ref={containerRef} className="relative">
       <input
+        id={id}
         className={inputClass}
         placeholder="City or airport"
         value={query}

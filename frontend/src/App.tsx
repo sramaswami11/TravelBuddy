@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { searchTrips, TripQuery, TripSuggestion } from './api';
 import { trackSearch } from './analytics';
 import { SearchForm } from './components/SearchForm';
 import { TripCard } from './components/TripCard';
-import { PrivacyPolicy } from './pages/PrivacyPolicy';
-import { TermsOfUse } from './pages/TermsOfUse';
+
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const TermsOfUse = lazy(() => import('./pages/TermsOfUse').then(m => ({ default: m.TermsOfUse })));
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/privacy" element={<PrivacyPolicy />} />
-      <Route path="/terms" element={<TermsOfUse />} />
+      <Route path="/privacy" element={<Suspense fallback={null}><PrivacyPolicy /></Suspense>} />
+      <Route path="/terms" element={<Suspense fallback={null}><TermsOfUse /></Suspense>} />
       <Route path="*" element={<HomePage />} />
     </Routes>
   );
@@ -41,6 +42,7 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col overflow-x-hidden">
+      <main className="flex flex-col flex-1">
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-600 py-14 px-4 overflow-hidden">
         <div className="max-w-3xl mx-auto text-center mb-10">
@@ -50,7 +52,7 @@ function HomePage() {
           <p className="mt-3 text-indigo-200 text-lg">
             Tell us your budget. We'll find your perfect trip.
           </p>
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-5 text-indigo-300 text-sm font-medium">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-5 text-indigo-200 text-sm font-medium">
             <span>✈ Flights</span>
             <span>🏨 Hotels</span>
             <span>🚗 Car Rental</span>
@@ -66,7 +68,7 @@ function HomePage() {
       {/* Results */}
       <div className="max-w-5xl mx-auto w-full px-4 py-10 flex-1">
         {loading && (
-          <div className="flex flex-col items-center py-16 text-gray-400">
+          <div className="flex flex-col items-center py-16 text-gray-500">
             <div className="w-10 h-10 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin mb-4" />
             <p className="text-sm">Searching flights, hotels, and activities…</p>
           </div>
@@ -92,7 +94,7 @@ function HomePage() {
         )}
 
         {!loading && !error && searched && results.length === 0 && (
-          <p className="text-center text-gray-400 py-16 text-sm">
+          <p className="text-center text-gray-500 py-16 text-sm">
             No trips found. Try a higher budget or different dates.
           </p>
         )}
@@ -103,7 +105,7 @@ function HomePage() {
         <div className="bg-white border-t border-gray-100 py-14 px-4">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">How it works</h2>
-            <p className="text-center text-gray-400 text-sm mb-10">
+            <p className="text-center text-gray-500 text-sm mb-10">
               From budget to booked in seconds.
             </p>
             <div className="grid gap-8 sm:grid-cols-3">
@@ -137,9 +139,11 @@ function HomePage() {
         </div>
       )}
 
+      </main>
+
       {/* Footer */}
       <footer className="bg-white border-t border-gray-100 py-6 px-4 mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-400">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
           <span className="font-bold text-gray-600">
             packed<span className="text-yellow-500">N</span>booked
           </span>
@@ -150,7 +154,7 @@ function HomePage() {
           </div>
           <span>© {new Date().getFullYear()} packedNbooked</span>
         </div>
-        <p className="max-w-5xl mx-auto mt-3 text-xs text-gray-400 text-center">
+        <p className="max-w-5xl mx-auto mt-3 text-xs text-gray-500 text-center">
           Some links on this site are affiliate links. If you book through them, we may earn a small commission at no extra cost to you.
         </p>
       </footer>

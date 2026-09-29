@@ -43,8 +43,9 @@ export function SearchForm({ onSearch, loading }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="min-w-0">
-          <label className={labelClass}>Flying from</label>
+          <label htmlFor="flying-from" className={labelClass}>Flying from</label>
           <AirportInput
+            id="flying-from"
             value={originIata}
             onChange={setOriginIata}
             inputClass={inputClass}
@@ -52,8 +53,9 @@ export function SearchForm({ onSearch, loading }: Props) {
           />
         </div>
         <div className="min-w-0">
-          <label className={labelClass}>Budget (USD)</label>
+          <label htmlFor="budget" className={labelClass}>Budget (USD)</label>
           <input
+            id="budget"
             className={`${inputClass} ${budgetError ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : ''}`}
             type="number"
             placeholder="2000"
@@ -68,8 +70,9 @@ export function SearchForm({ onSearch, loading }: Props) {
           {budgetError && <p className="mt-1 text-xs text-red-500">{budgetError}</p>}
         </div>
         <div className="min-w-0">
-          <label className={labelClass}>Days</label>
+          <label htmlFor="days" className={labelClass}>Days</label>
           <input
+            id="days"
             className={inputClass}
             type="number"
             min={1}
@@ -80,8 +83,9 @@ export function SearchForm({ onSearch, loading }: Props) {
           />
         </div>
         <div className="min-w-0">
-          <label className={labelClass}>Travelers</label>
+          <label htmlFor="travelers" className={labelClass}>Travelers</label>
           <input
+            id="travelers"
             className={inputClass}
             type="number"
             min={1}
@@ -94,8 +98,9 @@ export function SearchForm({ onSearch, loading }: Props) {
 
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="flex-1 sm:max-w-xs">
-          <label className={labelClass}>Departure date (optional)</label>
+          <label htmlFor="departure-date" className={labelClass}>Departure date (optional)</label>
           <input
+            id="departure-date"
             className={inputClass}
             type="date"
             value={departureDate}
