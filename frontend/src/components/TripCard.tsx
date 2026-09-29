@@ -49,7 +49,7 @@ export function TripCard({ trip }: Props) {
     <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col">
       <div className="bg-indigo-600 px-5 py-4 flex items-center justify-between">
         <div>
-          <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wide">
+          <p className="text-indigo-100 text-xs font-semibold uppercase tracking-wide">
             {trip.destination_iata}
           </p>
           <h2 className="text-white text-lg font-bold leading-tight">{trip.destination}</h2>
@@ -72,7 +72,7 @@ export function TripCard({ trip }: Props) {
         <p className="text-gray-600 text-sm leading-relaxed">{trip.ai_summary}</p>
 
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Cost breakdown</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Cost breakdown</p>
           <div className="space-y-1">
             {breakdown.map(({ label, type, value }) => (
               <div key={label} className="flex justify-between text-sm">
@@ -91,7 +91,7 @@ export function TripCard({ trip }: Props) {
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Highlights</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Highlights</p>
           <ul className="space-y-1">
             {trip.highlights.map((h, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
@@ -102,7 +102,7 @@ export function TripCard({ trip }: Props) {
           </ul>
         </div>
 
-        <p className="text-xs text-gray-400 italic">{trip.ranking_reason}</p>
+        <p className="text-xs text-gray-500 italic">{trip.ranking_reason}</p>
       </div>
 
       <div className="px-5 py-3 bg-gray-50 border-t flex flex-wrap gap-2">

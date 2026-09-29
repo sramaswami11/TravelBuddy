@@ -100,8 +100,8 @@ export function AirportInput({ value, onChange, inputClass, required, id }: Prop
                 <span className="text-xs font-bold text-indigo-600 w-8 shrink-0">{airport.iata}</span>
                 <div>
                   <span className="text-sm font-medium text-gray-900">{airport.city}</span>
-                  <span className="text-xs text-gray-400 ml-1">· {airport.country}</span>
-                  <p className="text-xs text-gray-400 leading-tight">{airport.name}</p>
+                  <span className="text-xs text-gray-500 ml-1">· {airport.country}</span>
+                  <p className="text-xs text-gray-500 leading-tight">{airport.name}</p>
                 </div>
               </div>
             </li>
