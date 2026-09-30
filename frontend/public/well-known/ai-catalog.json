@@ -1,10 +1,11 @@
 {
+  "specVersion": "1.0",
   "entries": [
     {
       "identifier": "urn:air:packednbooked.com:app:trip-planner",
       "displayName": "packedNbooked Trip Planner",
-      "type": "text/html",
-      "url": "https://packednbooked.com",
+      "type": "application/vnd.oai.openapi+json",
+      "url": "https://travelbuddy-production-5738.up.railway.app/openapi.json",
       "description": "Budget-first travel planning. Enter your budget, departure city, trip length, and number of travelers to get AI-ranked complete trip packages including flights, hotel, car rental, and activities.",
       "capabilities": ["TripSearch", "FlightSearch", "HotelSearch", "CarRentalSearch", "AttractionSearch"],
       "representativeQueries": [
