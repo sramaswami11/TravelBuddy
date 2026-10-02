@@ -1,71 +1,23 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const destinations = JSON.parse(
-  readFileSync(join(__dirname, '../backend/data/destinations.json'), 'utf8')
-);
-
-function toSlug(city) {
-  return city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-}
-
-function estimatedFlight(region) {
-  if (region === 'domestic') return 299;
-  if (region === 'hawaii') return 599;
-  if (region === 'europe') return 749;
-  if (region === 'asia') return 899;
-  return 499; // international: Caribbean, Mexico, Canada, Central America
-}
-
-function locationLabel(dest) {
-  return dest.state ? `${dest.city}, ${dest.state}` : `${dest.city}, ${dest.country}`;
-}
-
-function generatePage(dest) {
-  const slug = toSlug(dest.city);
-  const flight = estimatedFlight(dest.region);
-  const hotel7 = dest.avg_hotel_per_night * 7;
-  const car7 = dest.avg_car_per_day * 7;
-  const total = flight + hotel7 + car7;
-  const loc = locationLabel(dest);
-  const tagLine = dest.tags.slice(0, 3).map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' · ');
-  const metaDesc = `Plan a trip to ${dest.city}. Estimated 7-day cost from $${total.toLocaleString()} including round-trip flights, hotel, and car rental. Top attractions: ${dest.popular_attractions.slice(0, 2).join(', ')} and more.`;
-
-  const attractionsJsonLd = dest.popular_attractions
-    .map(a => `      { "@type": "TouristAttraction", "name": "${a}" }`)
-    .join(',\n');
-
-  const attractionItems = dest.popular_attractions
-    .map(a => `      <li>${a}</li>`)
-    .join('\n');
-
-  const tagChips = dest.tags
-    .map(t => `    <span class="tag">${t}</span>`)
-    .join('\n');
-
-  return `<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trip to ${dest.city}: Flights, Hotels &amp; Activities — packedNbooked</title>
-  <meta name="description" content="${metaDesc}" />
-  <link rel="canonical" href="https://packednbooked.com/trips/${slug}/" />
+  <title>Trip to San Francisco: Flights, Hotels &amp; Activities — packedNbooked</title>
+  <meta name="description" content="Plan a trip to San Francisco. Estimated 7-day cost from $1,944 including round-trip flights, hotel, and car rental. Top attractions: Golden Gate Bridge, Alcatraz Island and more." />
+  <link rel="canonical" href="https://packednbooked.com/trips/san-francisco/" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://packednbooked.com/trips/${slug}/" />
+  <meta property="og:url" content="https://packednbooked.com/trips/san-francisco/" />
   <meta property="og:site_name" content="packedNbooked" />
-  <meta property="og:title" content="Trip to ${dest.city}: Flights, Hotels &amp; Activities — packedNbooked" />
-  <meta property="og:description" content="${metaDesc}" />
+  <meta property="og:title" content="Trip to San Francisco: Flights, Hotels &amp; Activities — packedNbooked" />
+  <meta property="og:description" content="Plan a trip to San Francisco. Estimated 7-day cost from $1,944 including round-trip flights, hotel, and car rental. Top attractions: Golden Gate Bridge, Alcatraz Island and more." />
   <meta property="og:image" content="https://packednbooked.com/og-image.png" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Trip to ${dest.city}: Flights, Hotels &amp; Activities — packedNbooked" />
-  <meta name="twitter:description" content="${metaDesc}" />
+  <meta name="twitter:title" content="Trip to San Francisco: Flights, Hotels &amp; Activities — packedNbooked" />
+  <meta name="twitter:description" content="Plan a trip to San Francisco. Estimated 7-day cost from $1,944 including round-trip flights, hotel, and car rental. Top attractions: Golden Gate Bridge, Alcatraz Island and more." />
   <meta name="twitter:image" content="https://packednbooked.com/og-image.png" />
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-WMRHM2T8MD"></script>
@@ -80,12 +32,15 @@ function generatePage(dest) {
   {
     "@context": "https://schema.org",
     "@type": "TouristDestination",
-    "name": "${dest.city}",
-    "description": "${metaDesc}",
-    "url": "https://packednbooked.com/trips/${slug}/",
-    "touristType": ${JSON.stringify(dest.tags)},
+    "name": "San Francisco",
+    "description": "Plan a trip to San Francisco. Estimated 7-day cost from $1,944 including round-trip flights, hotel, and car rental. Top attractions: Golden Gate Bridge, Alcatraz Island and more.",
+    "url": "https://packednbooked.com/trips/san-francisco/",
+    "touristType": ["culture","food","outdoors","tech"],
     "includesAttraction": [
-${attractionsJsonLd}
+      { "@type": "TouristAttraction", "name": "Golden Gate Bridge" },
+      { "@type": "TouristAttraction", "name": "Alcatraz Island" },
+      { "@type": "TouristAttraction", "name": "Fisherman's Wharf" },
+      { "@type": "TouristAttraction", "name": "Napa Valley" }
     ]
   }
   </script>
@@ -156,12 +111,15 @@ ${attractionsJsonLd}
 </nav>
 
 <section class="hero">
-  <h1>Trip to ${dest.city}</h1>
-  <p class="hero-sub">${loc} &nbsp;&middot;&nbsp; ${tagLine}</p>
+  <h1>Trip to San Francisco</h1>
+  <p class="hero-sub">San Francisco, CA &nbsp;&middot;&nbsp; Culture · Food · Outdoors</p>
   <div class="tags">
-${tagChips}
+    <span class="tag">culture</span>
+    <span class="tag">food</span>
+    <span class="tag">outdoors</span>
+    <span class="tag">tech</span>
   </div>
-  <a href="/" class="hero-cta">Plan my trip to ${dest.city} &rarr;</a>
+  <a href="/" class="hero-cta">Plan my trip to San Francisco &rarr;</a>
 </section>
 
 <div class="container">
@@ -171,33 +129,36 @@ ${tagChips}
     <table class="cost-table">
       <tr>
         <td>Flights (round trip, estimated)</td>
-        <td>~$${flight.toLocaleString()}</td>
+        <td>~$299</td>
       </tr>
       <tr>
-        <td>Hotel &nbsp;<small style="color:#9ca3af;font-weight:400">(7 nights &times; $${dest.avg_hotel_per_night}/night avg)</small></td>
-        <td>~$${hotel7.toLocaleString()}</td>
+        <td>Hotel &nbsp;<small style="color:#9ca3af;font-weight:400">(7 nights &times; $170/night avg)</small></td>
+        <td>~$1,190</td>
       </tr>
       <tr>
-        <td>Car rental &nbsp;<small style="color:#9ca3af;font-weight:400">(7 days &times; $${dest.avg_car_per_day}/day avg)</small></td>
-        <td>~$${car7.toLocaleString()}</td>
+        <td>Car rental &nbsp;<small style="color:#9ca3af;font-weight:400">(7 days &times; $65/day avg)</small></td>
+        <td>~$455</td>
       </tr>
       <tr class="total">
         <td>Estimated total (per person)</td>
-        <td>~$${total.toLocaleString()}</td>
+        <td>~$1,944</td>
       </tr>
     </table>
     <p class="cost-note">Estimates are based on average market prices and vary by origin city, season, and how far in advance you book. Use packedNbooked to get real-time prices for your specific travel dates.</p>
   </div>
 
   <div class="card">
-    <h2>Popular Attractions in ${dest.city}</h2>
+    <h2>Popular Attractions in San Francisco</h2>
     <ul class="attraction-list">
-${attractionItems}
+      <li>Golden Gate Bridge</li>
+      <li>Alcatraz Island</li>
+      <li>Fisherman's Wharf</li>
+      <li>Napa Valley</li>
     </ul>
   </div>
 
   <div class="bottom-cta">
-    <p>Enter your budget and departure city — we'll find the best complete trip to ${dest.city} for you.</p>
+    <p>Enter your budget and departure city — we'll find the best complete trip to San Francisco for you.</p>
     <a href="/" class="btn">Find flights, hotels &amp; activities &rarr;</a>
   </div>
 
@@ -210,43 +171,8 @@ ${attractionItems}
     <a href="/terms">Terms of Use</a>
     <a href="mailto:hello@packednbooked.com">Contact</a>
   </div>
-  <div class="footer-legal">&copy; ${new Date().getFullYear()} packedNbooked &nbsp;&middot;&nbsp; Some links on this site are affiliate links.</div>
+  <div class="footer-legal">&copy; 2026 packedNbooked &nbsp;&middot;&nbsp; Some links on this site are affiliate links.</div>
 </footer>
 
 </body>
-</html>`;
-}
-
-// Generate pages
-const sitemapUrls = [];
-for (const dest of destinations) {
-  const slug = toSlug(dest.city);
-  const dir = join(__dirname, 'public', 'trips', slug);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'index.html'), generatePage(dest), 'utf8');
-  sitemapUrls.push(`https://packednbooked.com/trips/${slug}/`);
-  console.log(`  + /trips/${slug}/`);
-}
-
-// Update sitemap.xml
-const destEntries = sitemapUrls
-  .map(url => `  <url>\n    <loc>${url}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>`)
-  .join('\n');
-
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://packednbooked.com/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://packednbooked.com/privacy</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
-${destEntries}
-</urlset>`;
-
-writeFileSync(join(__dirname, 'public', 'sitemap.xml'), sitemap, 'utf8');
-console.log(`\nGenerated ${destinations.length} destination pages + updated sitemap.xml`);
+</html>
