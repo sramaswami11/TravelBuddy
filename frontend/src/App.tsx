@@ -142,21 +142,81 @@ function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-6 px-4 mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
-          <span className="font-bold text-gray-600">
-            packed<span className="text-yellow-500">N</span>booked
-          </span>
-          <div className="flex gap-5">
-            <Link to="/privacy" className="hover:text-indigo-600 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-indigo-600 transition-colors">Terms of Use</Link>
-            <a href="mailto:hello@packednbooked.com" className="hover:text-indigo-600 transition-colors">Contact</a>
+      <footer className="bg-white border-t border-gray-100 py-10 px-4 mt-auto">
+        <div className="max-w-5xl mx-auto">
+
+          {/* Destination links */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">US Destinations</h3>
+              <ul className="space-y-1.5">
+                {[
+                  ['Las Vegas', 'las-vegas'], ['New York', 'new-york'], ['Chicago', 'chicago'],
+                  ['Miami', 'miami'], ['Orlando', 'orlando'], ['Nashville', 'nashville'],
+                  ['New Orleans', 'new-orleans'], ['Denver', 'denver'], ['Seattle', 'seattle'],
+                  ['San Antonio', 'san-antonio'], ['San Francisco', 'san-francisco'],
+                  ['Los Angeles', 'los-angeles'], ['Austin', 'austin'],
+                  ['Scottsdale', 'scottsdale'], ['Honolulu', 'honolulu'],
+                ].map(([city, slug]) => (
+                  <li key={slug}>
+                    <a href={`/trips/${slug}/`} className="text-sm text-gray-500 hover:text-indigo-600 transition-colors">
+                      {city}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Caribbean &amp; Americas</h3>
+              <ul className="space-y-1.5">
+                {[
+                  ['Cancun', 'cancun'], ['Punta Cana', 'punta-cana'], ['Montego Bay', 'montego-bay'],
+                  ['Puerto Vallarta', 'puerto-vallarta'], ['Cabo San Lucas', 'cabo-san-lucas'],
+                  ['Nassau', 'nassau'], ['Aruba', 'aruba'], ['Toronto', 'toronto'],
+                ].map(([city, slug]) => (
+                  <li key={slug}>
+                    <a href={`/trips/${slug}/`} className="text-sm text-gray-500 hover:text-indigo-600 transition-colors">
+                      {city}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Europe &amp; Beyond</h3>
+              <ul className="space-y-1.5">
+                {[
+                  ['London', 'london'], ['Paris', 'paris'], ['Amsterdam', 'amsterdam'],
+                  ['Barcelona', 'barcelona'], ['Rome', 'rome'], ['Lisbon', 'lisbon'],
+                  ['Istanbul', 'istanbul'], ['Marrakesh', 'marrakesh'],
+                  ['Tokyo', 'tokyo'], ['Bali', 'bali'],
+                ].map(([city, slug]) => (
+                  <li key={slug}>
+                    <a href={`/trips/${slug}/`} className="text-sm text-gray-500 hover:text-indigo-600 transition-colors">
+                      {city}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <span>© {new Date().getFullYear()} packedNbooked</span>
+
+          <div className="border-t border-gray-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
+            <span className="font-bold text-gray-600">
+              packed<span className="text-yellow-500">N</span>booked
+            </span>
+            <div className="flex gap-5">
+              <Link to="/privacy" className="hover:text-indigo-600 transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="hover:text-indigo-600 transition-colors">Terms of Use</Link>
+              <a href="mailto:hello@packednbooked.com" className="hover:text-indigo-600 transition-colors">Contact</a>
+            </div>
+            <span>© {new Date().getFullYear()} packedNbooked</span>
+          </div>
+          <p className="mt-3 text-xs text-gray-500 text-center">
+            Some links on this site are affiliate links. If you book through them, we may earn a small commission at no extra cost to you.
+          </p>
+
         </div>
-        <p className="max-w-5xl mx-auto mt-3 text-xs text-gray-500 text-center">
-          Some links on this site are affiliate links. If you book through them, we may earn a small commission at no extra cost to you.
-        </p>
       </footer>
     </div>
   );
