@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     frontend_url: str = ""
     travelpayouts_token: str = ""
     travelpayouts_marker: str = ""
+    cj_publisher_id: str = ""
+    cj_booking_link_id: str = "17293132"
 
 
 settings = Settings()

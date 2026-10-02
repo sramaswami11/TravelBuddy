@@ -1,12 +1,13 @@
 """
-Hotel agent with mock pricing and real Hotellook affiliate links (Travelpayouts marker).
+Hotel agent with mock pricing and real Booking.com affiliate links (CJ publisher 101876939).
 Prices are estimated — the ~$ prefix on the UI sets user expectation.
-Affiliate links go to search.hotellook.com where users see real prices and book.
-Replace with a real hotel data API once one is identified.
+Affiliate links deep-link to Booking.com search results via CJ tracking.
+No cookie tracking — CJ in-session only per Booking.com programme terms.
 """
 import random
 import logging
 from datetime import date, timedelta
+from urllib.parse import urlencode, quote
 
 from config import settings
 from factories.base import TravelAgent
@@ -108,23 +109,25 @@ _HOTEL_TEMPLATES: dict[str, list[dict]] = {
     ],
 }
 
-def _hotellook_url(query: SearchQuery) -> str:
+def _booking_url(query: SearchQuery) -> str:
     check_in = query.departure_date or (date.today() + timedelta(days=30))
     check_out = check_in + timedelta(days=query.duration_days)
-    return (
-        f"https://search.hotellook.com/"
-        f"?destination={query.destination_iata}"
-        f"&checkIn={check_in.isoformat()}"
-        f"&checkOut={check_out.isoformat()}"
-        f"&adults={query.travelers}"
-        f"&marker={settings.travelpayouts_marker}"
-    )
+    destination = query.destination_name or query.destination_iata
+    params = urlencode({
+        "ss": destination,
+        "checkin": check_in.isoformat(),
+        "checkout": check_out.isoformat(),
+        "group_adults": query.travelers,
+        "no_rooms": 1,
+    })
+    booking_url = f"https://www.booking.com/searchresults.html?{params}"
+    return f"https://www.jdoqocy.com/click-{settings.cj_publisher_id}-{settings.cj_booking_link_id}?url={quote(booking_url, safe='')}"
 
 
 class BookingAgent(TravelAgent):
     @property
     def provider_name(self) -> str:
-        return "hotellook"
+        return "booking"
 
     async def search(self, query: SearchQuery) -> list[ProviderResult]:
         return self._mock_search(query)
@@ -134,7 +137,7 @@ class BookingAgent(TravelAgent):
         if not templates:
             return []
 
-        affiliate_url = _hotellook_url(query)
+        affiliate_url = _booking_url(query)
         results = []
         for hotel in templates:
             nightly = hotel["base_rate"] * random.uniform(0.85, 1.15)
