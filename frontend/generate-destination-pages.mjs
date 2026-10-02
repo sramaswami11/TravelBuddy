@@ -46,6 +46,46 @@ function generatePage(dest) {
     .map(t => `    <span class="tag">${t}</span>`)
     .join('\n');
 
+  const attractionsList = dest.popular_attractions.join(', ');
+  const faqJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": `How much does a 7-day trip to ${dest.city} cost?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `A 7-day trip to ${dest.city} costs an estimated $${total.toLocaleString()} per person, including round-trip flights (~$${flight.toLocaleString()}), 7 nights of hotel (~$${hotel7.toLocaleString()}), and a 7-day car rental (~$${car7.toLocaleString()}). Prices vary by season, departure city, and how far in advance you book.`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `How much do flights to ${dest.city} cost?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Round-trip flights to ${dest.city} typically cost around $${flight.toLocaleString()} per person from a major US city. Prices vary significantly by origin, airline, and booking window. Use packedNbooked to find real-time flight prices for your dates.`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `How much do hotels in ${dest.city} cost per night?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Hotels in ${dest.city} average around $${dest.avg_hotel_per_night} per night. Rates vary by neighborhood, hotel class, and season. Budget options are available for less, while luxury properties can cost significantly more.`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `What are the top things to do in ${dest.city}?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Top attractions in ${dest.city} include ${attractionsList}. packedNbooked can find activity and tour packages that fit your budget.`
+        }
+      }
+    ]
+  }, null, 2);
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -88,6 +128,10 @@ function generatePage(dest) {
 ${attractionsJsonLd}
     ]
   }
+  </script>
+
+  <script type="application/ld+json">
+  ${faqJsonLd}
   </script>
 
   <style>
