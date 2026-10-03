@@ -210,7 +210,12 @@ function HomePage() {
               <Link to="/terms" className="hover:text-indigo-600 transition-colors">Terms of Use</Link>
               <a href="mailto:hello@packednbooked.com" className="hover:text-indigo-600 transition-colors">Contact</a>
             </div>
-            <span>© {new Date().getFullYear()} packedNbooked</span>
+            <div className="flex items-center gap-4">
+              <span>© {new Date().getFullYear()} packedNbooked</span>
+              <a href="https://postyourstartup.co/startup/packednbooked?ref=badge" target="_blank" rel="noopener noreferrer">
+                <img src="https://postyourstartup.co/api/badge/packednbooked?theme=light" alt="Featured on PostYourStartup" width="212" height="55" />
+              </a>
+            </div>
           </div>
           <p className="mt-3 text-xs text-gray-500 text-center">
             Some links on this site are affiliate links. If you book through them, we may earn a small commission at no extra cost to you.
