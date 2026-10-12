@@ -19,7 +19,7 @@ export default function App() {
 }
 
 function HomePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
   const [results, setResults] = useState<TripSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
