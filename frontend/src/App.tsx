@@ -27,15 +27,16 @@ function HomePage() {
   const [copySuccess, setCopySuccess] = useState(false);
 
   const [initialQuery] = useState<Partial<TripQuery>>(() => {
-    const origin = searchParams.get('origin');
-    const budget = searchParams.get('budget');
+    const params = new URLSearchParams(window.location.search);
+    const origin = params.get('origin');
+    const budget = params.get('budget');
     if (!origin || !budget) return {};
     return {
       origin_iata: origin,
       budget_usd: parseFloat(budget),
-      duration_days: parseInt(searchParams.get('days') ?? '7'),
-      travelers: parseInt(searchParams.get('travelers') ?? '1'),
-      departure_date: searchParams.get('date') ?? undefined,
+      duration_days: parseInt(params.get('days') ?? '7'),
+      travelers: parseInt(params.get('travelers') ?? '1'),
+      departure_date: params.get('date') ?? undefined,
     };
   });
 
