@@ -7,10 +7,11 @@ interface Props {
   inputClass: string;
   required?: boolean;
   id?: string;
+  initialLabel?: string;
 }
 
-export function AirportInput({ value, onChange, inputClass, required, id }: Props) {
-  const [query, setQuery] = useState('');
+export function AirportInput({ value, onChange, inputClass, required, id, initialLabel }: Props) {
+  const [query, setQuery] = useState(initialLabel ?? '');
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);

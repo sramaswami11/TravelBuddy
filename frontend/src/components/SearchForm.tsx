@@ -1,18 +1,27 @@
 import { useState, FormEvent } from 'react';
 import { TripQuery } from '../api';
 import { AirportInput } from './AirportInput';
+import { airports } from '../data/airports';
 
 interface Props {
   onSearch: (query: TripQuery) => void;
   loading: boolean;
+  initialValues?: Partial<TripQuery>;
 }
 
-export function SearchForm({ onSearch, loading }: Props) {
-  const [originIata, setOriginIata] = useState('');
-  const [budget, setBudget] = useState('');
-  const [days, setDays] = useState('7');
-  const [travelers, setTravelers] = useState('1');
-  const [departureDate, setDepartureDate] = useState('');
+export function SearchForm({ onSearch, loading, initialValues }: Props) {
+  const [originIata, setOriginIata] = useState(initialValues?.origin_iata ?? '');
+  const [budget, setBudget] = useState(initialValues?.budget_usd ? String(initialValues.budget_usd) : '');
+  const [days, setDays] = useState(initialValues?.duration_days ? String(initialValues.duration_days) : '7');
+  const [travelers, setTravelers] = useState(initialValues?.travelers ? String(initialValues.travelers) : '1');
+  const [departureDate, setDepartureDate] = useState(initialValues?.departure_date ?? '');
+
+  const initialAirportLabel = initialValues?.origin_iata
+    ? (() => {
+        const a = airports.find(ap => ap.iata === initialValues.origin_iata);
+        return a ? `${a.city} (${a.iata})` : '';
+      })()
+    : '';
   const [budgetError, setBudgetError] = useState('');
 
   function handleSubmit(e: FormEvent) {
@@ -50,6 +59,7 @@ export function SearchForm({ onSearch, loading }: Props) {
             onChange={setOriginIata}
             inputClass={inputClass}
             required
+            initialLabel={initialAirportLabel}
           />
         </div>
         <div className="min-w-0">

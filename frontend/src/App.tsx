@@ -1,5 +1,5 @@
-import { useState, lazy, Suspense } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Routes, Route, Link, useSearchParams } from 'react-router-dom';
 import { searchTrips, TripQuery, TripSuggestion } from './api';
 import { trackSearch } from './analytics';
 import { SearchForm } from './components/SearchForm';
@@ -19,16 +19,39 @@ export default function App() {
 }
 
 function HomePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState<TripSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const [initialQuery] = useState<Partial<TripQuery>>(() => {
+    const origin = searchParams.get('origin');
+    const budget = searchParams.get('budget');
+    if (!origin || !budget) return {};
+    return {
+      origin_iata: origin,
+      budget_usd: parseFloat(budget),
+      duration_days: parseInt(searchParams.get('days') ?? '7'),
+      travelers: parseInt(searchParams.get('travelers') ?? '1'),
+      departure_date: searchParams.get('date') ?? undefined,
+    };
+  });
 
   async function handleSearch(query: TripQuery) {
     setLoading(true);
     setError(null);
     setSearched(true);
     trackSearch(query.origin_iata, query.budget_usd, query.duration_days);
+    const params: Record<string, string> = {
+      origin: query.origin_iata,
+      budget: String(query.budget_usd),
+      days: String(query.duration_days),
+      travelers: String(query.travelers),
+    };
+    if (query.departure_date) params.date = query.departure_date;
+    setSearchParams(params, { replace: true });
     try {
       const data = await searchTrips(query);
       setResults(data);
@@ -38,6 +61,18 @@ function HomePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    if (initialQuery.origin_iata && initialQuery.budget_usd) {
+      handleSearch(initialQuery as TripQuery);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleShare() {
+    navigator.clipboard.writeText(window.location.href);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
   }
 
   return (
@@ -61,7 +96,7 @@ function HomePage() {
         </div>
 
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-6">
-          <SearchForm onSearch={handleSearch} loading={loading} />
+          <SearchForm onSearch={handleSearch} loading={loading} initialValues={initialQuery} />
         </div>
       </div>
 
@@ -82,9 +117,17 @@ function HomePage() {
 
         {!loading && !error && results.length > 0 && (
           <>
-            <h2 className="text-lg font-semibold text-gray-700 mb-5">
-              Top {results.length} trip{results.length !== 1 ? 's' : ''} for your budget
-            </h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-gray-700">
+                Top {results.length} trip{results.length !== 1 ? 's' : ''} for your budget
+              </h2>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+              >
+                {copySuccess ? '✓ Copied!' : '⤴ Share results'}
+              </button>
+            </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {results.map(trip => (
                 <TripCard key={trip.destination_iata} trip={trip} />
