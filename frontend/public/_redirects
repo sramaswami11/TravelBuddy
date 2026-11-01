@@ -2,4 +2,5 @@
 /robots.txt /robots.txt 200
 /ai-catalog.json /well-known/ai-catalog.json 200
 /trips/* /trips/:splat/ 301
+/blog/* /blog/:splat/ 301
 /* /index.html 200
