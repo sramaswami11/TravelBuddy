@@ -189,6 +189,22 @@ function HomePage() {
       <footer className="bg-white border-t border-gray-100 py-10 px-4 mt-auto">
         <div className="max-w-5xl mx-auto">
 
+          {/* Blog posts */}
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">From the Blog</h3>
+            <ul className="space-y-1.5">
+              {[
+                ['How much does a 7-day Las Vegas trip cost on a $2,000 budget?', '/blog/las-vegas-7-day-trip-cost/'],
+                ['How much does a 7-day Miami trip cost on a $2,000 budget?', '/blog/miami-7-day-trip-cost/'],
+                ['How much does a 7-day New York trip cost on a $2,000 budget?', '/blog/new-york-7-day-trip-cost/'],
+              ].map(([title, href]) => (
+                <li key={href}>
+                  <a href={href} className="text-sm text-gray-500 hover:text-indigo-600 transition-colors">{title}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* Destination links */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
             <div>

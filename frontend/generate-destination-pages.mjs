@@ -8,6 +8,14 @@ const destinations = JSON.parse(
   readFileSync(join(__dirname, '../backend/data/destinations.json'), 'utf8')
 );
 
+const BLOG_POSTS = {
+  'las-vegas': 'las-vegas-7-day-trip-cost',
+  'miami': 'miami-7-day-trip-cost',
+  'new-york': 'new-york-7-day-trip-cost',
+};
+
+const BLOG_URLS = Object.values(BLOG_POSTS).map(s => `https://packednbooked.com/blog/${s}/`);
+
 function toSlug(city) {
   return city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
@@ -26,6 +34,7 @@ function locationLabel(dest) {
 
 function generatePage(dest) {
   const slug = toSlug(dest.city);
+  const blogSlug = BLOG_POSTS[slug];
   const flight = estimatedFlight(dest.region);
   const hotel7 = dest.avg_hotel_per_night * 7;
   const car7 = dest.avg_car_per_day * 7;
@@ -174,6 +183,11 @@ ${attractionsJsonLd}
     .attraction-list li { background: #f3f4f6; border-radius: .6rem; padding: .65rem 1rem; font-size: .9rem; font-weight: 500; color: #374151; }
     .attraction-list li::before { content: "★ "; color: #fbbf24; }
 
+    /* Blog link */
+    .blog-link-card { background: #f5f3ff; border: 1.5px solid #e0e7ff; border-radius: 1rem; padding: 1.25rem 1.75rem; margin-bottom: 1.5rem; }
+    .blog-link-card a { color: #4f46e5; font-weight: 700; font-size: .95rem; }
+    .blog-link-card a:hover { text-decoration: underline; }
+
     /* Bottom CTA */
     .bottom-cta { text-align: center; padding: 1.5rem 0 .5rem; }
     .bottom-cta p { color: #6b7280; margin-bottom: 1.1rem; font-size: .95rem; }
@@ -240,6 +254,9 @@ ${attractionItems}
     </ul>
   </div>
 
+${blogSlug ? `  <div class="blog-link-card">
+    <a href="/blog/${blogSlug}/">Full cost breakdown: How much does a 7-day trip to ${dest.city} cost on a $2,000 budget? &rarr;</a>
+  </div>` : ''}
   <div class="bottom-cta">
     <p>Enter your budget and departure city — we'll find the best complete trip to ${dest.city} for you.</p>
     <a href="/" class="btn">Find flights, hotels &amp; activities &rarr;</a>
@@ -277,6 +294,10 @@ const destEntries = sitemapUrls
   .map(url => `  <url>\n    <loc>${url}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>`)
   .join('\n');
 
+const blogEntries = BLOG_URLS
+  .map(url => `  <url>\n    <loc>${url}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`)
+  .join('\n');
+
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -284,11 +305,7 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  <url>
-    <loc>https://packednbooked.com/privacy</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
+${blogEntries}
 ${destEntries}
 </urlset>`;
 
