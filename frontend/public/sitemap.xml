@@ -16,6 +16,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://packednbooked.com/blog/new-york-7-day-trip-cost/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://packednbooked.com/trips/las-vegas/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
